@@ -32,6 +32,7 @@ from contrib.oauth import (
     OAuthToken,
     )
 from lazr.restful.testing.webservice import WebServiceCaller
+import six
 import transaction
 from zope.app.testing.functional import (
     HTTPCaller,
@@ -75,6 +76,7 @@ from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     stop,
     )
+
 
 SAMPLEDATA_ACCESS_SECRETS = {
     u'salgado-read-nonprivate': u'secret',
@@ -140,8 +142,7 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         if oauth_consumer_key is not None and oauth_access_key is not None:
             # XXX cjwatson 2016-01-25: Callers should be updated to pass
             # Unicode directly, but that's a big change.
-            if isinstance(oauth_consumer_key, bytes):
-                oauth_consumer_key = unicode(oauth_consumer_key)
+            oauth_consumer_key = six.ensure_text(oauth_consumer_key)
             self.consumer = OAuthConsumer(oauth_consumer_key, u'')
             if oauth_access_secret is None:
                 oauth_access_secret = SAMPLEDATA_ACCESS_SECRETS.get(

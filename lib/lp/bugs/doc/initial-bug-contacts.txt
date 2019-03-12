@@ -125,13 +125,9 @@ demonstrating this, we'll also make Sample Person a subscriber to ubuntu
 pmount, to show that the subscription changes behave correctly when a
 subscriber to the new package is already subscribed to the bug:
 
-    >>> from zope.event import notify
-
     >>> import transaction
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> from lp.services.mail import stub
+    >>> from lp.services.webapp.snapshot import notify_modified
 
     >>> daf = personset.getByName("daf")
     >>> ubuntu_pmount.addBugSubscription(daf, daf)
@@ -140,16 +136,10 @@ subscriber to the new package is already subscribed to the bug:
     >>> ubuntu_pmount.addBugSubscription(sample_person, sample_person)
     <...StructuralSubscription object at ...>
 
-    >>> old_state = Snapshot(
-    ...        bug_one_in_ubuntu_firefox, providing=IBugTask)
-
-    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount, daf)
-
-    >>> source_package_changed = ObjectModifiedEvent(
-    ...        bug_one_in_ubuntu_firefox, old_state,
-    ...        ["id", "title", "sourcepackagename"])
-
-    >>> notify(source_package_changed)
+    >>> with notify_modified(
+    ...         bug_one_in_ubuntu_firefox,
+    ...         ["id", "title", "sourcepackagename"]):
+    ...     bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount, daf)
     >>> transaction.commit()
 
 With the source package changed, we can see that daf is now subscribed:
@@ -239,15 +229,9 @@ address is used as the From address.
 Let's see that nothing unexpected happens when we set the source package
 to None.
 
-    >>> old_state = Snapshot(
-    ...        bug_one_in_ubuntu_firefox, providing=IBugTask)
-
-    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu, daf)
-
-    >>> source_package_changed = ObjectModifiedEvent(
-    ...        bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
-
-    >>> notify(source_package_changed)
+    >>> with notify_modified(
+    ...         bug_one_in_ubuntu_firefox, ["sourcepackagename"]):
+    ...     bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu, daf)
     >>> transaction.commit()
     >>> stub.test_emails = []
 
@@ -272,15 +256,9 @@ contact address. Let's add such a team as a subscriber.
     >>> ubuntu_pmount.addBugSubscription(ubuntu_gnome, ubuntu_gnome)
     <...StructuralSubscription object at ...>
 
-    >>> old_state = Snapshot(
-    ...        bug_one_in_ubuntu_firefox, providing=IBugTask)
-
-    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount, daf)
-
-    >>> source_package_changed = ObjectModifiedEvent(
-    ...        bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
-
-    >>> notify(source_package_changed)
+    >>> with notify_modified(
+    ...         bug_one_in_ubuntu_firefox, ["sourcepackagename"]):
+    ...     bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount, daf)
     >>> transaction.commit()
 
 The Ubuntu Gnome team was subscribed to the bug:
@@ -317,14 +295,8 @@ Then we'll reassign bug #2 in Ubuntu to be in Firefox:
     ...         bug_two_in_ubuntu.bug.subscriptions])
     [u'Steve Alexander']
 
-    >>> old_state = Snapshot(bug_two_in_ubuntu, providing=IBugTask)
-
-    >>> bug_two_in_ubuntu.transitionToTarget(mozilla_firefox, daf)
-
-    >>> product_changed = ObjectModifiedEvent(
-    ...        bug_two_in_ubuntu, old_state, ["id", "title", "product"])
-
-    >>> notify(product_changed)
+    >>> with notify_modified(bug_two_in_ubuntu, ["id", "title", "product"]):
+    ...     bug_two_in_ubuntu.transitionToTarget(mozilla_firefox, daf)
     >>> transaction.commit()
 
 

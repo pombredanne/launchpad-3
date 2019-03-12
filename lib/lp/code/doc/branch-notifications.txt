@@ -97,7 +97,6 @@ previous one.  The size limit is one of the following:
   * Send the entire diff
 
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.code.interfaces.branch import IBranch
     >>> personset = getUtility(IPersonSet)
 
     >>> def subscribe_user_by_email(branch, email, level, size, level2):
@@ -420,13 +419,11 @@ Resubscribe our test user.
     ...     BranchSubscriptionDiffSize.NODIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
 
-    >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.code.interfaces.branchjob import IBranchModifiedMailJobSource
     >>> from lp.services.config import config
     >>> from lp.services.job.runner import JobRunner
     >>> from lp.services.log.logger import DevNullLogger
+    >>> from lp.services.webapp.snapshot import notify_modified
     >>> from lp.testing.dbuser import dbuser
 
     >>> def run_modified_mail_jobs():
@@ -436,16 +433,12 @@ Resubscribe our test user.
     ...         JobRunner.fromReady(job_source, logger=logger).runAll()
 
     >>> login('test@canonical.com')
-    >>> before_modification = Snapshot(branch, providing=IBranch)
-
-    >>> branch.whiteboard = 'This is the new whiteboard'
 
 Even though the branch notification emails don't use the field
-names just now, we'll pass them through anyway
+names just now, we'll pass them through anyway.
 
-    >>> notify(ObjectModifiedEvent(branch,
-    ...                               before_modification,
-    ...                               ['whiteboard']))
+    >>> with notify_modified(branch, ['whiteboard']):
+    ...     branch.whiteboard = 'This is the new whiteboard'
     >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
@@ -483,19 +476,20 @@ something like this:
     >>> branch = getUtility(IBranchLookup).getByUniqueName(
     ...     '~name12/firefox/main')
 
-    >>> before_modification = Snapshot(branch, providing=IBranch)
-
-    >>> branch.name = 'new-name'
-    >>> branch.url = 'http://example.com/foo'
-    >>> branch.whiteboard = 'This is a multiline whiteboard\n' \
-    ...  'with a really long line that should invoke the splitting ' \
-    ...  'algorithm in the mail wrapper to make sure that the line ' \
-    ...  'is not too long'
     >>> from lp.code.enums import BranchLifecycleStatus
-    >>> branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
-    >>> updated_fields = ['name','title','summary','url','whiteboard','lifecycle_status']
-    >>> notify(ObjectModifiedEvent(
-    ...     branch, before_modification, updated_fields))
+    >>> updated_fields = [
+    ...     'name', 'title', 'summary', 'url', 'whiteboard',
+    ...     'lifecycle_status',
+    ...     ]
+    >>> with notify_modified(branch, updated_fields):
+    ...     branch.name = 'new-name'
+    ...     branch.url = 'http://example.com/foo'
+    ...     branch.whiteboard = (
+    ...         'This is a multiline whiteboard\n'
+    ...         'with a really long line that should invoke the splitting '
+    ...         'algorithm in the mail wrapper to make sure that the line '
+    ...         'is not too long')
+    ...     branch.lifecycle_status = BranchLifecycleStatus.EXPERIMENTAL
     >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
@@ -530,12 +524,8 @@ something like this:
 All the text fields of a branch are considered unicode, so the email
 must also handle the unicode.
 
-    >>> before_modification = Snapshot(branch, providing=IBranch)
-
-    >>> branch.whiteboard = u'A new \ua000 summary'
-    >>> updated_fields = ['whiteboard']
-    >>> notify(ObjectModifiedEvent(
-    ...     branch, before_modification, updated_fields))
+    >>> with notify_modified(branch, ['whiteboard']):
+    ...     branch.whiteboard = u'A new \ua000 summary'
     >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()
@@ -572,13 +562,10 @@ There are no subscribers to this branch.
 Login as an admin user so we can alter the branch.
 
     >>> login('foo.bar@canonical.com')
-    >>> before_modification = Snapshot(branch, providing=IBranch)
 
-    >>> branch.whiteboard = (
-    ...     'Please refrain from bad language in a public arena.')
-    >>> updated_fields = ['whiteboard']
-    >>> notify(ObjectModifiedEvent(
-    ...     branch, before_modification, updated_fields))
+    >>> with notify_modified(branch, ['whiteboard']):
+    ...     branch.whiteboard = (
+    ...         'Please refrain from bad language in a public arena.')
     >>> run_modified_mail_jobs()
 
     >>> notifications = pop_notifications()

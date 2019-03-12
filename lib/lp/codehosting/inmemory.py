@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """In-memory doubles of core codehosting objects."""
@@ -16,6 +16,7 @@ from bzrlib.urlutils import (
     escape,
     unescape,
     )
+import six
 from twisted.internet import defer
 from zope.component import (
     adapter,
@@ -715,10 +716,7 @@ class FakeCodehosting:
         except LaunchpadFault as e:
             return e
         except LaunchpadValidationError as e:
-            msg = e.args[0]
-            if isinstance(msg, unicode):
-                msg = msg.encode('utf-8')
-            return faults.PermissionDenied(msg)
+            return faults.PermissionDenied(six.ensure_binary(e.args[0]))
 
     def requestMirror(self, requester_id, branch_id):
         self._branch_set.get(branch_id).requestMirror()

@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TranslationTemplatesBuildBehaviour."""
@@ -22,8 +22,10 @@ from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.librarian.utils import copy_and_close
+from lp.services.webapp import canonical_url
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
@@ -65,7 +67,7 @@ class MakeBehaviourMixin(object):
         slave = WaitingSlave(**kwargs)
         behaviour.setBuilder(self.factory.makeBuilder(), slave)
         if use_fake_chroot:
-            behaviour._getDistroArchSeries().addOrUpdateChroot(
+            behaviour.distro_arch_series.addOrUpdateChroot(
                 self.factory.makeLibraryFileAlias(db_only=True))
             self.layer.txn.commit()
         return behaviour
@@ -97,27 +99,39 @@ class TestTranslationTemplatesBuildBehaviour(
         b2 = self.makeBehaviour()
         self.assertNotEqual(b1.getLogFileName(), b2.getLogFileName())
 
+    @defer.inlineCallbacks
     def test_composeBuildRequest(self):
         behaviour = self.makeBehaviour()
         switch_dbuser(config.builddmaster.dbuser)
         build_request = yield behaviour.composeBuildRequest(None)
-        das = behaviour._getDistroArchSeries()
+        das = behaviour.distro_arch_series
         self.assertEqual(
-            ('translation-templates', das, {}, {
+            ('translation-templates', das, PackagePublishingPocket.RELEASE, {},
+             {
                 'arch_tag': das.architecturetag,
+                'archive_private': False,
                 'branch_url': behaviour.build.branch.composePublicURL(),
+                'build_url': canonical_url(behaviour.build),
+                'fast_cleanup': True,
                 'series': das.distroseries.name,
                 }),
             build_request)
 
-    def test_getDistroArchSeries(self):
-        # _getDistroArchSeries produces the nominated arch-indep
-        # architecture for the current Ubuntu series.
+    def test_archive(self):
+        # TranslationTemplatesBuildBehaviour.archive is the main Ubuntu
+        # archive.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        behaviour = self.makeBehaviour()
+        self.assertEqual(ubuntu.main_archive, behaviour.archive)
+
+    def test_distro_arch_series(self):
+        # TranslationTemplatesBuildBehaviour.distro_arch_series is the
+        # nominated arch-indep architecture for the current Ubuntu series.
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         behaviour = self.makeBehaviour()
         self.assertEqual(
             ubuntu.currentseries.nominatedarchindep,
-            behaviour._getDistroArchSeries())
+            behaviour.distro_arch_series)
 
     def test_readTarball(self):
         behaviour = self.makeBehaviour()

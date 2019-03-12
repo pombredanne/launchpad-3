@@ -87,7 +87,7 @@ class SharingService:
     """Service providing operations for adding and removing pillar grantees.
 
     Service is accessed via a url of the form
-    '/services/sharing?ws.op=...
+    '/+services/sharing?ws.op=...
     """
 
     @property

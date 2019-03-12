@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BuildFarmJobBehaviourBase."""
@@ -20,7 +20,10 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archiveuploader.uploadprocessor import parse_build_upload_leaf_name
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildBaseImageType,
+    BuildStatus,
+    )
 from lp.buildmaster.interactor import BuilderInteractor
 from lp.buildmaster.interfaces.builder import BuildDaemonError
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -74,10 +77,26 @@ class FakeLibraryFileAlias:
         self.http_url = 'http://librarian.dev/%s' % filename
 
 
+class FakePocketChroot:
+
+    def __init__(self, chroot, image_type):
+        self.chroot = chroot
+        self.image_type = image_type
+
+
 class FakeDistroArchSeries:
 
-    def getChroot(self):
-        return FakeLibraryFileAlias('chroot-fooix-bar-y86.tar.bz2')
+    def __init__(self):
+        self.images = {
+            BuildBaseImageType.CHROOT: 'chroot-fooix-bar-y86.tar.gz',
+            }
+
+    def getPocketChroot(self, pocket, exact_pocket=False, image_type=None):
+        if image_type in self.images:
+            return FakePocketChroot(
+                FakeLibraryFileAlias(self.images[image_type]), image_type)
+        else:
+            return None
 
 
 class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
@@ -137,8 +156,7 @@ class TestDispatchBuildToSlave(TestCase):
 
     run_tests_with = AsynchronousDeferredRunTest
 
-    @defer.inlineCallbacks
-    def test_dispatchBuildToSlave(self):
+    def makeBehaviour(self, das):
         files = {
             'foo.dsc': {'url': 'http://host/foo.dsc', 'sha1': '0'},
             'bar.tar': {
@@ -146,26 +164,25 @@ class TestDispatchBuildToSlave(TestCase):
                 'username': 'admin', 'password': 'sekrit'}}
 
         behaviour = BuildFarmJobBehaviourBase(FakeBuildFarmJob())
-        builder = MockBuilder()
-        slave = OkSlave()
-        logger = BufferLogger()
         behaviour.composeBuildRequest = FakeMethod(
-            ('foobuild', FakeDistroArchSeries(), files,
+            ('foobuild', das, PackagePublishingPocket.RELEASE, files,
              {'some': 'arg', 'archives': ['http://admin:sekrit@blah/']}))
-        behaviour.setBuilder(builder, slave)
-        yield behaviour.dispatchBuildToSlave(logger)
+        return behaviour
 
+    def assertDispatched(self, slave, logger, chroot_filename, image_type):
         # The slave's been asked to cache the chroot and both source
         # files, and then to start the build.
         expected_calls = [
             ('ensurepresent',
-             'http://librarian.dev/chroot-fooix-bar-y86.tar.bz2', '', ''),
+             'http://librarian.dev/%s' % chroot_filename, '', ''),
             ('ensurepresent', 'http://host/bar.tar', 'admin', 'sekrit'),
             ('ensurepresent', 'http://host/foo.dsc', '', ''),
             ('build', 'PACKAGEBUILD-1', 'foobuild',
-             hashlib.sha1('chroot-fooix-bar-y86.tar.bz2').hexdigest(),
+             hashlib.sha1(chroot_filename).hexdigest(),
              ['foo.dsc', 'bar.tar'],
-             {'archives': ['http://admin:sekrit@blah/'], 'some': 'arg'})]
+             {'archives': ['http://admin:sekrit@blah/'],
+              'image_type': image_type,
+              'some': 'arg'})]
         self.assertEqual(expected_calls, slave.call_log)
 
         # And details have been logged, including the build arguments
@@ -182,6 +199,63 @@ class TestDispatchBuildToSlave(TestCase):
             logger.getLogBuffer(),
             "INFO Job PACKAGEBUILD-1 (some job for something) started on "
             "http://fake:0000: BuildStatus.BUILDING PACKAGEBUILD-1\n")
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave(self):
+        behaviour = self.makeBehaviour(FakeDistroArchSeries())
+        builder = MockBuilder()
+        slave = OkSlave()
+        logger = BufferLogger()
+        behaviour.setBuilder(builder, slave)
+        yield behaviour.dispatchBuildToSlave(logger)
+
+        self.assertDispatched(
+            slave, logger, 'chroot-fooix-bar-y86.tar.gz', 'chroot')
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_with_other_image_available(self):
+        # If a base image is available but isn't in the behaviour's image
+        # types, it isn't used.
+        das = FakeDistroArchSeries()
+        das.images[BuildBaseImageType.LXD] = 'lxd-fooix-bar-y86.tar.gz'
+        behaviour = self.makeBehaviour(das)
+        builder = MockBuilder()
+        slave = OkSlave()
+        logger = BufferLogger()
+        behaviour.setBuilder(builder, slave)
+        yield behaviour.dispatchBuildToSlave(logger)
+
+        self.assertDispatched(
+            slave, logger, 'chroot-fooix-bar-y86.tar.gz', 'chroot')
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_lxd(self):
+        das = FakeDistroArchSeries()
+        das.images[BuildBaseImageType.LXD] = 'lxd-fooix-bar-y86.tar.gz'
+        behaviour = self.makeBehaviour(das)
+        behaviour.image_types = [
+            BuildBaseImageType.LXD, BuildBaseImageType.CHROOT]
+        builder = MockBuilder()
+        slave = OkSlave()
+        logger = BufferLogger()
+        behaviour.setBuilder(builder, slave)
+        yield behaviour.dispatchBuildToSlave(logger)
+
+        self.assertDispatched(slave, logger, 'lxd-fooix-bar-y86.tar.gz', 'lxd')
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_fallback(self):
+        behaviour = self.makeBehaviour(FakeDistroArchSeries())
+        behaviour.image_types = [
+            BuildBaseImageType.LXD, BuildBaseImageType.CHROOT]
+        builder = MockBuilder()
+        slave = OkSlave()
+        logger = BufferLogger()
+        behaviour.setBuilder(builder, slave)
+        yield behaviour.dispatchBuildToSlave(logger)
+
+        self.assertDispatched(
+            slave, logger, 'chroot-fooix-bar-y86.tar.gz', 'chroot')
 
 
 class TestGetUploadMethodsMixin:

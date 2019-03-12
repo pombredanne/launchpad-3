@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base and idle BuildFarmJobBehaviour classes."""
@@ -20,6 +20,7 @@ from twisted.internet import defer
 from zope.component import getUtility
 
 from lp.buildmaster.enums import (
+    BuildBaseImageType,
     BuildFarmJobType,
     BuildStatus,
     )
@@ -27,6 +28,7 @@ from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotBuild,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -44,10 +46,19 @@ class BuildFarmJobBehaviourBase:
     All build-farm job behaviours should inherit from this.
     """
 
+    image_types = [BuildBaseImageType.CHROOT]
+
     def __init__(self, build):
         """Store a reference to the job_type with which we were created."""
         self.build = build
         self._builder = None
+
+    @property
+    def archive(self):
+        if self.build is not None:
+            return self.build.archive
+        else:
+            return None
 
     @property
     def distro_arch_series(self):
@@ -55,6 +66,13 @@ class BuildFarmJobBehaviourBase:
             return self.build.distro_arch_series
         else:
             return None
+
+    @property
+    def pocket(self):
+        if self.build is not None:
+            return self.build.pocket
+        else:
+            return PackagePublishingPocket.RELEASE
 
     def setBuilder(self, builder, slave):
         """The builder should be set once and not changed."""
@@ -69,7 +87,7 @@ class BuildFarmJobBehaviourBase:
         """The default behaviour is to send only common extra arguments."""
         args = {}
         args["arch_tag"] = self.distro_arch_series.architecturetag
-        args["archive_private"] = self.build.archive.private
+        args["archive_private"] = self.archive.private
         args["build_url"] = canonical_url(self.build)
         args["fast_cleanup"] = self._builder.virtualized
         args["series"] = self.distro_arch_series.distroseries.name
@@ -79,7 +97,7 @@ class BuildFarmJobBehaviourBase:
     def composeBuildRequest(self, logger):
         args = yield self.extraBuildArgs(logger=logger)
         defer.returnValue(
-            (self.builder_type, self.distro_arch_series,
+            (self.builder_type, self.distro_arch_series, self.pocket,
              self.determineFilesToSend(), args))
 
     def verifyBuildRequest(self, logger):
@@ -94,13 +112,21 @@ class BuildFarmJobBehaviourBase:
             "Preparing job %s (%s) on %s."
             % (cookie, self.build.title, self._builder.url))
 
-        builder_type, das, files, args = yield self.composeBuildRequest(logger)
+        builder_type, das, pocket, files, args = yield (
+            self.composeBuildRequest(logger))
 
         # First cache the chroot and any other files that the job needs.
-        chroot = das.getChroot()
-        if chroot is None:
+        pocket_chroot = None
+        for image_type in self.image_types:
+            pocket_chroot = das.getPocketChroot(
+                pocket=pocket, image_type=image_type)
+            if pocket_chroot is not None:
+                break
+        if pocket_chroot is None:
             raise CannotBuild(
                 "Unable to find a chroot for %s" % das.displayname)
+        chroot = pocket_chroot.chroot
+        args["image_type"] = pocket_chroot.image_type.name.lower()
 
         filename_to_sha1 = {}
         dl = []

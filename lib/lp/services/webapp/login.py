@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Stuff to do with logging in and logging out."""
 
@@ -26,6 +26,7 @@ from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPException,
     )
+import six
 import transaction
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
@@ -262,17 +263,12 @@ class OpenIDLogin(LaunchpadView):
             else:
                 value_list = [value]
 
-            def encode_utf8(element):
-                # urllib.urlencode will just encode unicode values to ASCII.
-                # For our purposes, we can be a little more liberal and
-                # allow UTF-8.
-                if isinstance(element, unicode):
-                    element = element.encode('UTF-8')
-                return element
-
+            # urllib.urlencode will just encode unicode values to ASCII.
+            # For our purposes, we can be a little more liberal and allow
+            # UTF-8.
             yield (
-                encode_utf8(name),
-                [encode_utf8(value) for value in value_list])
+                six.ensure_binary(name),
+                [six.ensure_binary(value) for value in value_list])
 
 
 class OpenIDCallbackView(OpenIDLogin):

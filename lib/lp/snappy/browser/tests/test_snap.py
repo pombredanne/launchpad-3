@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package views."""
@@ -32,6 +32,7 @@ from testtools.matchers import (
     MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
+    Not,
     )
 import transaction
 from zope.component import getUtility
@@ -225,6 +226,24 @@ class TestSnapAddView(BaseTestSnapView):
             view.initial_values["store_distro_series"],
             MatchesStructure.byEquality(
                 snappy_series=newest, distro_series=lts))
+
+    def test_initial_store_distro_series_can_infer_distro_series(self):
+        # If the latest snappy series supports inferring the distro series
+        # from snapcraft.yaml, then we default to that.
+        self.useFixture(BranchHostingFixture(blob=b""))
+        lts = self.factory.makeUbuntuDistroSeries(
+            version="16.04", status=SeriesStatus.CURRENT)
+        with admin_logged_in():
+            self.factory.makeSnappySeries(usable_distro_series=[lts])
+            newest = self.factory.makeSnappySeries(
+                preferred_distro_series=lts, can_infer_distro_series=True)
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(self.person):
+            view = create_initialized_view(branch, "+new-snap")
+        self.assertThat(
+            view.initial_values["store_distro_series"],
+            MatchesStructure(
+                snappy_series=Equals(newest), distro_series=Is(None)))
 
     def test_create_new_snap_not_logged_in(self):
         branch = self.factory.makeAnyBranch()
@@ -532,6 +551,26 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
+    def test_create_new_snap_infer_distro_series(self):
+        self.useFixture(BranchHostingFixture(blob=b""))
+        with admin_logged_in():
+            self.snappyseries.can_infer_distro_series = True
+        branch = self.factory.makeAnyBranch()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl(name="field.name").value = "snap-name"
+        self.assertEqual(
+            [self.snappyseries.name],
+            browser.getControl(name="field.store_distro_series").value)
+        self.assertEqual(
+            self.snappyseries.name,
+            browser.getControl(name="field.store_distro_series").options[0])
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertEqual("snap-name", extract_text(content.h1))
+        self.assertIsNone(find_tag_by_id(content, "distro_series"))
+
     def test_initial_name_extraction_bzr_success(self):
         self.useFixture(BranchHostingFixture(
             file_list={"snapcraft.yaml": "file-id"}, blob=b"name: test-snap"))
@@ -667,27 +706,6 @@ class TestSnapEditView(BaseTestSnapView):
             self.snappyseries = self.factory.makeSnappySeries(
                 usable_distro_series=[self.distroseries])
 
-    def test_initial_store_series(self):
-        # The initial store_series is the newest that is usable for the
-        # selected distroseries.
-        development = self.factory.makeUbuntuDistroSeries(
-            version="14.10", status=SeriesStatus.DEVELOPMENT)
-        experimental = self.factory.makeUbuntuDistroSeries(
-            version="15.04", status=SeriesStatus.EXPERIMENTAL)
-        with admin_logged_in():
-            self.factory.makeSnappySeries(
-                usable_distro_series=[development, experimental])
-            newest = self.factory.makeSnappySeries(
-                usable_distro_series=[development])
-            self.factory.makeSnappySeries(usable_distro_series=[experimental])
-        snap = self.factory.makeSnap(distroseries=development)
-        with person_logged_in(self.person):
-            view = create_initialized_view(snap, "+edit")
-        self.assertThat(
-            view.initial_values["store_distro_series"],
-            MatchesStructure.byEquality(
-                snappy_series=newest, distro_series=development))
-
     def test_edit_snap(self):
         old_series = self.factory.makeUbuntuDistroSeries()
         old_branch = self.factory.makeAnyBranch()
@@ -808,8 +826,8 @@ class TestSnapEditView(BaseTestSnapView):
             "Source:\n%s\nEdit snap package" % new_ref.display_name,
             MatchesTagText(content, "source"))
 
-    def setUpDistroSeries(self):
-        """Set up a distroseries with some available processors."""
+    def setUpSeries(self):
+        """Set up {distro,snappy}series with some available processors."""
         distroseries = self.factory.makeUbuntuDistroSeries()
         processor_names = ["386", "amd64", "hppa"]
         for name in processor_names:
@@ -818,8 +836,9 @@ class TestSnapEditView(BaseTestSnapView):
                 distroseries=distroseries, architecturetag=name,
                 processor=processor)
         with admin_logged_in():
-            self.factory.makeSnappySeries(usable_distro_series=[distroseries])
-        return distroseries
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[distroseries])
+        return distroseries, snappyseries
 
     def assertSnapProcessors(self, snap, names):
         self.assertContentEqual(
@@ -835,10 +854,10 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertThat(processors_control.controls, MatchesSetwise(*matchers))
 
     def test_display_processors(self):
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
         self.assertContentEqual(
@@ -847,10 +866,10 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertContentEqual(["386", "amd64", "hppa"], processors.options)
 
     def test_edit_processors(self):
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
@@ -871,10 +890,10 @@ class TestSnapEditView(BaseTestSnapView):
         proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
         proc_armel = self.factory.makeProcessor(
             name="armel", restricted=True, build_by_default=False)
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         snap.setProcessors([proc_386, proc_amd64, proc_armel])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
@@ -887,7 +906,7 @@ class TestSnapEditView(BaseTestSnapView):
     def test_edit_processors_restricted(self):
         # A restricted processor is shown disabled in the UI and cannot be
         # enabled.
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
         self.factory.makeDistroArchSeries(
@@ -895,7 +914,7 @@ class TestSnapEditView(BaseTestSnapView):
             processor=proc_armhf)
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
@@ -921,13 +940,13 @@ class TestSnapEditView(BaseTestSnapView):
         proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="armhf",
             processor=proc_armhf)
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         snap.setProcessors([proc_386, proc_amd64, proc_armhf])
         self.assertSnapProcessors(snap, ["386", "amd64", "armhf"])
         browser = self.getUserBrowser(
@@ -1193,11 +1212,13 @@ class TestSnapView(BaseTestSnapView):
         self.factory.makeBuilder(virtualized=True)
 
     def makeSnap(self, **kwargs):
+        if "distroseries" not in kwargs:
+            kwargs["distroseries"] = self.distroseries
         if kwargs.get("branch") is None and kwargs.get("git_ref") is None:
             kwargs["branch"] = self.factory.makeAnyBranch()
         return self.factory.makeSnap(
-            registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name="snap-name", **kwargs)
+            registrant=self.person, owner=self.person, name="snap-name",
+            **kwargs)
 
     def makeBuild(self, snap=None, archive=None, date_created=None, **kwargs):
         if snap is None:
@@ -1319,6 +1340,15 @@ class TestSnapView(BaseTestSnapView):
             Primary Archive for Ubuntu Linux
             """, self.getMainText(build.snap))
 
+    def test_index_no_distro_series(self):
+        # If the snap is configured to infer an appropriate distro series
+        # from snapcraft.yaml, then the index page does not show a distro
+        # series.
+        snap = self.makeSnap(distroseries=None)
+        text = self.getMainText(snap)
+        self.assertIn("Snap package information", text)
+        self.assertNotIn("Distribution series:", text)
+
     def test_index_success_with_buildlog(self):
         # The build log is shown if it is there.
         build = self.makeBuild(
@@ -1403,6 +1433,33 @@ class TestSnapView(BaseTestSnapView):
         store_upload_tag = soupmatchers.Tag(
             "store upload", "div", attrs={"id": "store_upload"})
         self.assertThat(view(), soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "distribution series", "dl", attrs={"id": "distro_series"}),
+            soupmatchers.Within(
+                store_upload_tag,
+                soupmatchers.Tag(
+                    "store series name", "span", text=snappyseries.title)),
+            soupmatchers.Within(
+                store_upload_tag,
+                soupmatchers.Tag("store name", "span", text=snap.store_name))))
+
+    def test_index_store_upload_no_distro_series(self):
+        # If the snap package is to be automatically uploaded to the store
+        # and is configured to infer an appropriate distro series from
+        # snapcraft.yaml, the index page shows details of this.
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[self.distroseries],
+                can_infer_distro_series=True)
+        snap = self.makeSnap(
+            distroseries=None, store_upload=True, store_series=snappyseries,
+            store_name=self.getUniqueString("store-name"))
+        view = create_initialized_view(snap, "+index")
+        store_upload_tag = soupmatchers.Tag(
+            "store upload", "div", attrs={"id": "store_upload"})
+        self.assertThat(view(), soupmatchers.HTMLContains(
+            Not(soupmatchers.Tag(
+                "distribution series", "dl", attrs={"id": "distro_series"})),
             soupmatchers.Within(
                 store_upload_tag,
                 soupmatchers.Tag(
@@ -1649,3 +1706,25 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
         login_person(self.person)
         [request] = self.snap.pending_build_requests
         self.assertEqual(ppa, request.archive)
+
+    def test_request_builds_no_distro_series(self):
+        # Requesting builds of a snap configured to infer an appropriate
+        # distro series from snapcraft.yaml creates a pending build request.
+        login_person(self.person)
+        self.snap.distro_series = None
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        [request] = self.snap.pending_build_requests
+        self.assertThat(removeSecurityProxy(request), MatchesStructure(
+            snap=Equals(self.snap),
+            status=Equals(SnapBuildRequestStatus.PENDING),
+            error_message=Is(None),
+            builds=AfterPreprocessing(list, Equals([])),
+            archive=Equals(self.ubuntu.main_archive),
+            _job=MatchesStructure(
+                requester=Equals(self.person),
+                pocket=Equals(PackagePublishingPocket.UPDATES),
+                channels=Is(None))))

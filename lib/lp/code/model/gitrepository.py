@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,9 +9,13 @@ __all__ = [
     'parse_git_commits',
     ]
 
-from collections import OrderedDict
+from collections import (
+    defaultdict,
+    OrderedDict,
+    )
 from datetime import datetime
 import email
+from fnmatch import fnmatch
 from functools import partial
 from itertools import (
     chain,
@@ -25,6 +29,7 @@ from lazr.enum import DBItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
+import six
 from storm.databases.postgres import Returning
 from storm.expr import (
     And,
@@ -48,7 +53,10 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
@@ -77,10 +85,12 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.app.interfaces.services import IService
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import (
     BranchMergeProposalStatus,
     GitGranteeType,
     GitObjectType,
+    GitPermissionType,
     GitRepositoryType,
     )
 from lp.code.errors import (
@@ -93,7 +103,6 @@ from lp.code.errors import (
 from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    notify_modified,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitactivity import IGitActivitySet
@@ -113,6 +122,10 @@ from lp.code.interfaces.gitrepository import (
     IGitRepository,
     IGitRepositorySet,
     user_has_special_git_repository_access,
+    )
+from lp.code.interfaces.gitrule import (
+    describe_git_permissions,
+    is_rule_exact,
     )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
@@ -137,7 +150,10 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
@@ -568,9 +584,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             raise ValueError('ref info sha1 is not a 40-character string')
         if obj["type"] not in object_type_map:
             raise ValueError('ref info type is not a recognised object type')
-        sha1 = obj["sha1"]
-        if isinstance(sha1, bytes):
-            sha1 = sha1.decode("US-ASCII")
+        sha1 = six.ensure_text(obj["sha1"], encoding="US-ASCII")
         return {"sha1": sha1, "type": object_type_map[obj["type"]]}
 
     def createOrUpdateRefs(self, refs_info, get_objects=False, logger=None):
@@ -660,27 +674,36 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         hosting_client = getUtility(IGitHostingClient)
         new_refs = {}
-        for path, info in hosting_client.getRefs(hosting_path).items():
+        exclude_prefixes = config.codehosting.git_exclude_ref_prefixes.split()
+        for path, info in hosting_client.getRefs(
+                hosting_path, exclude_prefixes=exclude_prefixes).items():
             try:
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError as e:
                 if logger is not None:
                     logger.warning(
                         "Unconvertible ref %s %s: %s" % (path, info, e))
-        current_refs = {ref.path: ref for ref in self.refs}
+        # GitRef rows can be large (especially commit_message), and we don't
+        # need the whole thing.
+        current_refs = {
+            ref[0]: ref[1:]
+            for ref in Store.of(self).find(
+                (GitRef.path, GitRef.commit_sha1, GitRef.object_type,
+                 And(
+                     GitRef.author_id != None,
+                     GitRef.author_date != None,
+                     GitRef.committer_id != None,
+                     GitRef.committer_date != None,
+                     GitRef.commit_message != None)),
+                GitRef.repository_id == self.id)}
         refs_to_upsert = {}
         for path, info in new_refs.items():
             current_ref = current_refs.get(path)
             if (current_ref is None or
-                info["sha1"] != current_ref.commit_sha1 or
-                info["type"] != current_ref.object_type):
+                    info["sha1"] != current_ref[0] or
+                    info["type"] != current_ref[1]):
                 refs_to_upsert[path] = info
-            elif (info["type"] == GitObjectType.COMMIT and
-                  (current_ref.author_id is None or
-                   current_ref.author_date is None or
-                   current_ref.committer_id is None or
-                   current_ref.committer_date is None or
-                   current_ref.commit_message is None)):
+            elif info["type"] == GitObjectType.COMMIT and not current_ref[2]:
                 # Only request detailed commit metadata for refs that point
                 # to commits.
                 refs_to_upsert[path] = info
@@ -725,6 +748,17 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         visibility, and IGitCollection which honours visibility rules.
         """
         return set()
+
+    def getLatestScanJob(self):
+        """See `IGitRepository`."""
+        from lp.code.model.gitjob import GitJob, GitRefScanJob
+        latest_job = IStore(GitJob).find(
+            GitJob,
+            GitJob.repository == self,
+            GitJob.job_type == GitRefScanJob.class_job_type,
+            GitJob.job == Job.id).order_by(
+                Desc(Job.date_finished)).first()
+        return latest_job
 
     def visibleByUser(self, user):
         """See `IGitRepository`."""
@@ -1098,9 +1132,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 "Merge detected: %s => %s",
                 proposal.source_git_ref.identity,
                 proposal.target_git_ref.identity)
-        notify_modified(
-            proposal, proposal.markAsMerged,
-            merged_revision_id=merged_revision_id)
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.markAsMerged(merged_revision_id=merged_revision_id)
 
     def detectMerges(self, paths, logger=None):
         """See `IGitRepository`."""
@@ -1141,17 +1174,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRule, GitRule.repository == self).order_by(GitRule.position)
 
+    def _canonicaliseRuleOrdering(self, rules):
+        """Canonicalise rule ordering.
+
+        Exact-match rules come first in lexicographical order, followed by
+        wildcard rules in the requested order.  (Note that `sorted` is
+        guaranteed to be stable.)
+        """
+        return sorted(rules, key=lambda rule: (
+            (0, rule.ref_pattern) if is_rule_exact(rule) else (1,)))
+
     def _syncRulePositions(self, rules):
         """Synchronise rule positions with their order in a provided list.
 
         :param rules: A sequence of `IGitRule`s in the desired order.
         """
-        # Canonicalise rule ordering: exact-match rules come first in
-        # lexicographical order, followed by wildcard rules in the requested
-        # order.  (Note that `sorted` is guaranteed to be stable.)
-        rules = sorted(
-            rules,
-            key=lambda rule: (0, rule.ref_pattern) if rule.is_exact else (1,))
+        rules = self._canonicaliseRuleOrdering(rules)
         # Ensure the correct position of all rules, which may involve more
         # work than necessary, but is simple and tends to be
         # self-correcting.  This works because the unique constraint on
@@ -1205,7 +1243,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
-    def findRuleGrantsByGrantee(self, grantee):
+    def findRuleGrantsByGrantee(self, grantee, include_transitive=True,
+                                ref_pattern=None):
         """See `IGitRepository`."""
         if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
             if grantee == GitGranteeType.PERSON:
@@ -1213,12 +1252,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                     "grantee may not be GitGranteeType.PERSON; pass a person "
                     "object instead")
             clauses = [GitRuleGrant.grantee_type == grantee]
+        elif not include_transitive:
+            clauses = [
+                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+                GitRuleGrant.grantee == grantee,
+                ]
         else:
             clauses = [
                 GitRuleGrant.grantee_type == GitGranteeType.PERSON,
                 TeamParticipation.person == grantee,
                 GitRuleGrant.grantee == TeamParticipation.teamID
                 ]
+        if ref_pattern is not None:
+            clauses.extend([
+                GitRuleGrant.rule_id == GitRule.id,
+                GitRule.ref_pattern == ref_pattern,
+                ])
         return self.grants.find(*clauses).config(distinct=True)
 
     def getRules(self):
@@ -1242,7 +1291,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         self._validateRules(rules)
         existing_rules = {rule.ref_pattern: rule for rule in self.rules}
-        new_rules = OrderedDict((rule.ref_pattern, rule) for rule in rules)
+        new_rules = OrderedDict(
+            (rule.ref_pattern, rule)
+            for rule in self._canonicaliseRuleOrdering(rules))
         GitRule.preloadGrantsForRules(existing_rules.values())
 
         # Remove old rules first so that we don't generate unnecessary move
@@ -1279,6 +1330,70 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 "(got %s instead)" %
                 (requested_rule_order, observed_rule_order))
 
+    def checkRefPermissions(self, person, ref_paths):
+        """See `IGitRepository`."""
+        result = {}
+
+        rules = list(self.rules)
+        grants_for_user = defaultdict(list)
+        grants = EmptyResultSet()
+        is_owner = False
+        if IPerson.providedBy(person):
+            grants = grants.union(self.findRuleGrantsByGrantee(person))
+            if person.inTeam(self.owner):
+                is_owner = True
+        elif person == GitGranteeType.REPOSITORY_OWNER:
+            is_owner = True
+        if is_owner:
+            grants = grants.union(
+                self.findRuleGrantsByGrantee(GitGranteeType.REPOSITORY_OWNER))
+        for grant in grants:
+            grants_for_user[grant.rule].append(grant)
+
+        for ref_path in ref_paths:
+            matching_rules = [
+                rule for rule in rules if fnmatch(
+                    six.ensure_binary(ref_path),
+                    rule.ref_pattern.encode("UTF-8"))]
+            if is_owner and not matching_rules:
+                # If there are no matching rules, then the repository owner
+                # can do anything.
+                result[ref_path] = {
+                    GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH,
+                    GitPermissionType.CAN_FORCE_PUSH,
+                    }
+                continue
+
+            seen_grantees = set()
+            union_permissions = set()
+            for rule in matching_rules:
+                for grant in grants_for_user[rule]:
+                    if (grant.grantee, grant.grantee_type) in seen_grantees:
+                        continue
+                    union_permissions.update(grant.permissions)
+                    seen_grantees.add((grant.grantee, grant.grantee_type))
+
+            owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
+            if is_owner and owner_type not in seen_grantees:
+                union_permissions.update(
+                    {GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH})
+
+            # Permission to force-push implies permission to push.
+            if GitPermissionType.CAN_FORCE_PUSH in union_permissions:
+                union_permissions.add(GitPermissionType.CAN_PUSH)
+
+            result[ref_path] = union_permissions
+
+        return result
+
+    def api_checkRefPermissions(self, person, paths):
+        """See `IGitRepository`."""
+        return {
+            path: describe_git_permissions(permissions)
+            for path, permissions in self.checkRefPermissions(
+                person, paths).items()
+            }
+
     def getActivity(self, changed_after=None):
         """See `IGitRepository`."""
         clauses = [GitActivity.repository_id == self.id]
@@ -1286,6 +1401,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             clauses.append(GitActivity.date_changed > changed_after)
         return Store.of(self).find(GitActivity, *clauses).order_by(
             Desc(GitActivity.date_changed), Desc(GitActivity.id))
+
+    def getPrecachedActivity(self, **kwargs):
+
+        def preloadDataForActivities(activities):
+            # Utility to load related data for a list of GitActivity
+            person_ids = set()
+            for activity in activities:
+                person_ids.add(activity.changer_id)
+                person_ids.add(activity.changee_id)
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                person_ids, need_validity=True))
+            return activities
+
+        results = self.getActivity(**kwargs)
+        return DecoratedResultSet(
+            results, pre_iter_hook=preloadDataForActivities)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

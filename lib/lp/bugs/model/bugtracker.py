@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -151,6 +151,12 @@ def make_bugtracker_name(uri):
     elif base_uri.host == 'github.com' and base_uri.path.endswith('/issues'):
         repository_id = base_uri.path[:-len('/issues')].lstrip('/')
         base_name = 'github-' + repository_id.replace('/', '-').lower()
+    elif (('gitlab' in base_uri.host or
+           base_uri.host == 'salsa.debian.org') and
+          base_uri.path.endswith('/issues')):
+        repository_id = base_uri.path[:-len('/issues')].lstrip('/')
+        base_name = '%s-%s' % (
+            base_uri.host, repository_id.replace('/', '-').lower())
     else:
         base_name = base_uri.host
 
@@ -336,6 +342,9 @@ class BugTracker(SQLBase):
             "&short_desc=%(summary)s&long_desc=%(description)s"),
         BugTrackerType.GITHUB: (
             "%(base_url)s/new?title=%(summary)s&body=%(description)s"),
+        BugTrackerType.GITLAB: (
+            "%(base_url)s/new"
+            "?issue[title]=%(summary)s&issue[description]=%(description)s"),
         BugTrackerType.GOOGLE_CODE: (
             "%(base_url)s/entry?summary=%(summary)s&"
             "comment=%(description)s"),
@@ -368,6 +377,9 @@ class BugTracker(SQLBase):
         BugTrackerType.GITHUB: (
             "%(base_url)s?utf8=%%E2%%9C%%93"
             "&q=is%%3Aissue%%20is%%3Aopen%%20%(summary)s"),
+        BugTrackerType.GITLAB: (
+            "%(base_url)s?scope=all&utf8=%%E2%%9C%%93&state=opened"
+            "&search=%(summary)s"),
         BugTrackerType.GOOGLE_CODE: "%(base_url)s/list?q=%(summary)s",
         BugTrackerType.DEBBUGS: (
             "%(base_url)s/cgi-bin/search.cgi?phrase=%(summary)s"

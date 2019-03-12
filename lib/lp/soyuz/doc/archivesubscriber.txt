@@ -446,6 +446,26 @@ We can do this as an admin too:
     >>> login("admin@canonical.com")
     >>> new_sub.cancel(cprov)
 
+We can cancel subscriptions in bulk:
+
+    >>> login("celso.providelo@canonical.com")
+    >>> subs = [
+    ...     cprov_private_ppa.newSubscription(factory.makePerson(), cprov)
+    ...     for _ in range(3)]
+    >>> sub_set.cancel([subs[0].id, subs[1].id], cprov)
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> login("admin@canonical.com")
+    >>> sub_set.cancel([subs[0].id, subs[1].id], cprov)
+    >>> print(subs[0].status.name)
+    CANCELLED
+    >>> print(subs[1].status.name)
+    CANCELLED
+    >>> print(subs[2].status.name)
+    CURRENT
+
 
 Finding all non-active subscribers
 ----------------------------------

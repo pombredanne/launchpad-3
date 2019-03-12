@@ -138,6 +138,26 @@
             interface="lp.snappy.interfaces.snappyseries.ISnappyDistroSeriesSet" />
     </securedutility>
 
+    <!-- Bases for snaps -->
+    <class class="lp.snappy.model.snapbase.SnapBase">
+        <allow
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseView
+                       lp.snappy.interfaces.snapbase.ISnapBaseEditableAttributes" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseEdit"
+            set_schema="lp.snappy.interfaces.snapbase.ISnapBaseEditableAttributes" />
+    </class>
+    <securedutility
+        class="lp.snappy.model.snapbase.SnapBaseSet"
+        provides="lp.snappy.interfaces.snapbase.ISnapBaseSet">
+        <allow
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseSet" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseSetEdit" />
+    </securedutility>
+
     <!-- Store interaction -->
     <securedutility
         class="lp.snappy.model.snapstoreclient.SnapStoreClient"

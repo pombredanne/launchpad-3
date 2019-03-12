@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
@@ -53,7 +53,10 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildBaseImageType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -73,9 +76,13 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
-from lp.services.log.logger import BufferLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import (
+    SNAP_PRIVATE_FEATURE_FLAG,
     SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
     SnapBuildArchiveOwnerMismatch,
     )
@@ -329,8 +336,13 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
         build_request = yield job.composeBuildRequest(None)
-        self.assertEqual(build_request[1], job.build.distro_arch_series)
-        self.assertThat(build_request[3], IsInstance(dict))
+        self.assertThat(build_request, MatchesListwise([
+            Equals('snap'),
+            Equals(job.build.distro_arch_series),
+            Equals(job.build.pocket),
+            Equals({}),
+            IsInstance(dict),
+            ]))
 
     @defer.inlineCallbacks
     def test_requestProxyToken_unconfigured(self):
@@ -385,6 +397,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "build_url": Equals(canonical_url(job.build)),
             "fast_cleanup": Is(True),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -411,6 +424,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "git_repository": Equals(ref.repository.git_https_url),
             "git_path": Equals(ref.name),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -437,6 +451,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "fast_cleanup": Is(True),
             "git_repository": Equals(ref.repository.git_https_url),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -465,6 +480,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "git_repository": Equals(url),
             "git_path": Equals("master"),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -491,6 +507,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "fast_cleanup": Is(True),
             "git_repository": Equals(url),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -589,11 +606,20 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.assertTrue(args["build_source_tarball"])
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_private(self):
+        # If the snap is private, extraBuildArgs sends the appropriate
+        # arguments.
+        self.useFixture(FeatureFixture({SNAP_PRIVATE_FEATURE_FLAG: "on"}))
+        job = self.makeJob(private=True)
+        args = yield job.extraBuildArgs()
+        self.assertTrue(args["private"])
+
+    @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_url_set(self):
         job = self.makeJob()
         build_request = yield job.composeBuildRequest(None)
         self.assertThat(
-            build_request[3]["proxy_url"], self.getProxyURLMatcher(job))
+            build_request[4]["proxy_url"], self.getProxyURLMatcher(job))
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_deleted(self):
@@ -624,6 +650,37 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
                                   "~snap-owner/test-snap has been deleted.")
         with ExpectedException(CannotBuild, expected_exception_msg):
             yield job.composeBuildRequest(None)
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_prefers_lxd(self):
+        job = self.makeJob(allow_internet=False)
+        builder = MockBuilder()
+        builder.processor = job.build.processor
+        slave = OkSlave()
+        job.setBuilder(builder, slave)
+        chroot_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            chroot_lfa, image_type=BuildBaseImageType.CHROOT)
+        lxd_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            lxd_lfa, image_type=BuildBaseImageType.LXD)
+        yield job.dispatchBuildToSlave(DevNullLogger())
+        self.assertEqual(
+            ('ensurepresent', lxd_lfa.http_url, '', ''), slave.call_log[0])
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_falls_back_to_chroot(self):
+        job = self.makeJob(allow_internet=False)
+        builder = MockBuilder()
+        builder.processor = job.build.processor
+        slave = OkSlave()
+        job.setBuilder(builder, slave)
+        chroot_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            chroot_lfa, image_type=BuildBaseImageType.CHROOT)
+        yield job.dispatchBuildToSlave(DevNullLogger())
+        self.assertEqual(
+            ('ensurepresent', chroot_lfa.http_url, '', ''), slave.call_log[0])
 
 
 class MakeSnapBuildMixin:

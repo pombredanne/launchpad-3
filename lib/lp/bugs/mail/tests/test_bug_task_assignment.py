@@ -1,19 +1,16 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Bug task assignment-related email tests."""
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 import transaction
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import providedBy
 
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.mail import stub
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -32,8 +29,6 @@ class TestAssignmentNotification(TestCaseWithFactory):
                                                 name='rebirth')
         self.bug = self.factory.makeBug(target=self.product)
         self.bug_task = self.bug.getBugTask(self.product)
-        self.bug_task_before_modification = Snapshot(self.bug_task,
-            providing=providedBy(self.bug_task))
         self.person_assigned_email = 'stever@example.com'
         self.person_assigned = self.factory.makePerson(
             name='assigned', displayname='Steve Rogers',
@@ -53,10 +48,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
         """Test notification string when a person is assigned a task by
            someone else."""
         self.assertEqual(len(stub.test_emails), 0, 'emails in queue')
-        self.bug_task.transitionToAssignee(self.person_assigned)
-        notify(ObjectModifiedEvent(
-            self.bug_task, self.bug_task_before_modification,
-            ['assignee'], user=self.user))
+        with notify_modified(self.bug_task, ['assignee'], user=self.user):
+            self.bug_task.transitionToAssignee(self.person_assigned)
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 1, 'email not sent')
         rationale = (
@@ -69,10 +62,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
         """Test notification string when a person is assigned a task by
            themselves."""
         stub.test_emails = []
-        self.bug_task.transitionToAssignee(self.user)
-        notify(ObjectModifiedEvent(
-            self.bug_task, self.bug_task_before_modification,
-            edited_fields=['assignee']))
+        with notify_modified(self.bug_task, ['assignee']):
+            self.bug_task.transitionToAssignee(self.user)
         transaction.commit()
         self.assertEqual(1, len(stub.test_emails))
         rationale = (
@@ -86,10 +77,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
         """Test that a new recipient being assigned a bug task does send
            a NEW message."""
         self.assertEqual(len(stub.test_emails), 0, 'emails in queue')
-        self.bug_task.transitionToAssignee(self.person_assigned)
-        notify(ObjectModifiedEvent(
-            self.bug_task, self.bug_task_before_modification,
-            ['assignee'], user=self.user))
+        with notify_modified(self.bug_task, ['assignee'], user=self.user):
+            self.bug_task.transitionToAssignee(self.person_assigned)
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 1, 'email not sent')
         new_message = '[NEW]'
@@ -100,10 +89,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
     def test_assignee_new_subscriber(self):
         """Build a list of people who will receive emails about the bug
         task changes and ensure the assignee is not one."""
-        self.bug_task.transitionToAssignee(self.person_assigned)
-        notify(ObjectModifiedEvent(
-            self.bug_task, self.bug_task_before_modification,
-            ['assignee'], user=self.user))
+        with notify_modified(self.bug_task, ['assignee'], user=self.user):
+            self.bug_task.transitionToAssignee(self.person_assigned)
         latest_notification = BugNotification.selectFirst(orderBy='-id')
         notifications, omitted, messages = construct_email_notifications(
             [latest_notification])
@@ -117,10 +104,8 @@ class TestAssignmentNotification(TestCaseWithFactory):
         """Assign a team, who is not subscribed to a bug, a bug task and
         ensure that team members do not receive an email about the bug
         task changes."""
-        self.bug_task.transitionToAssignee(self.team_assigned)
-        notify(ObjectModifiedEvent(
-            self.bug_task, self.bug_task_before_modification,
-            ['assignee'], user=self.user))
+        with notify_modified(self.bug_task, ['assignee'], user=self.user):
+            self.bug_task.transitionToAssignee(self.team_assigned)
         latest_notification = BugNotification.selectFirst(orderBy='-id')
         notifications, omitted, messages = construct_email_notifications(
             [latest_notification])

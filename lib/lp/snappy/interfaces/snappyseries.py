@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snappy series interfaces."""
@@ -24,7 +24,6 @@ from lazr.restful.declarations import (
     exported,
     operation_for_version,
     operation_parameters,
-    operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
     )
@@ -87,7 +86,7 @@ class ISnappySeriesView(Interface):
     registrant = exported(PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
         vocabulary="ValidPersonOrTeam",
-        description=_("The person who registered this snap package.")))
+        description=_("The person who registered this snappy series.")))
 
 
 class ISnappySeriesEditableAttributes(Interface):
@@ -119,6 +118,12 @@ class ISnappySeriesEditableAttributes(Interface):
         value_type=Reference(schema=IDistroSeries),
         required=True, readonly=False))
 
+    can_infer_distro_series = exported(Bool(
+        title=_("Can infer distro series?"), required=True, readonly=False,
+        description=_(
+            "True if inferring a distro series from snapcraft.yaml is "
+            "supported for this snappy series.")))
+
 
 class ISnappySeries(ISnappySeriesView, ISnappySeriesEditableAttributes):
     """A series for snap packages in the store."""
@@ -135,7 +140,7 @@ class ISnappyDistroSeries(Interface):
     snappy_series = Reference(
         ISnappySeries, title=_("Snappy series"), readonly=True)
     distro_series = Reference(
-        IDistroSeries, title=_("Distro series"), readonly=True)
+        IDistroSeries, title=_("Distro series"), required=False, readonly=True)
     preferred = Bool(
         title=_("Preferred"),
         required=True, readonly=False,
@@ -179,15 +184,6 @@ class ISnappySeriesSet(ISnappySeriesSetEdit):
         :raises NoSuchSnappySeries: if no snappy series exists with this name.
         """
 
-    @operation_parameters(
-        distro_series=Reference(
-            IDistroSeries, title=_("Distro series"), required=True))
-    @operation_returns_collection_of(ISnappySeries)
-    @export_read_operation()
-    @operation_for_version("devel")
-    def getByDistroSeries(distro_series):
-        """Return all `ISnappySeries` usable with this `IDistroSeries`."""
-
     @collection_default_content()
     def getAll():
         """Return all `ISnappySeries`."""
@@ -195,9 +191,6 @@ class ISnappySeriesSet(ISnappySeriesSetEdit):
 
 class ISnappyDistroSeriesSet(Interface):
     """Interface representing the set of snappy/distro series links."""
-
-    def getByDistroSeries(distro_series):
-        """Return all `SnappyDistroSeries` for this `IDistroSeries`."""
 
     def getByBothSeries(snappy_series, distro_series):
         """Return a `SnappyDistroSeries` for this pair of series, or None."""

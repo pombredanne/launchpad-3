@@ -89,7 +89,7 @@ class CustomUploadAlreadyExists(CustomUploadError):
     """A build for this type, architecture, and version already exists."""
     def __init__(self, custom_type, arch, version):
         message = ('%s build %s for architecture %s already exists' %
-                   (custom_type, arch, version))
+                   (custom_type, version, arch))
         CustomUploadError.__init__(self, message)
 
 

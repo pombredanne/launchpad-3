@@ -54,6 +54,9 @@ class ISnapBuildStoreUploadStatusChangedEvent(IObjectEvent):
 class ISnapStoreUploadJob(IRunnableJob):
     """A Job that uploads a snap build to the store."""
 
+    store_metadata = Attribute(
+        _("Combined metadata for this job and matching snapbuild"))
+
     error_message = TextLine(
         title=_("Error message"), required=False, readonly=True)
 
@@ -66,6 +69,10 @@ class ISnapStoreUploadJob(IRunnableJob):
 
     store_revision = Int(
         title=_("The revision assigned to this build by the store"),
+        required=False, readonly=True)
+
+    status_url = TextLine(
+        title=_("The URL on the store to get the status of this build"),
         required=False, readonly=True)
 
 

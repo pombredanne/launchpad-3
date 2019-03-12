@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `SnapBuild`.
@@ -20,6 +20,7 @@ from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildBaseImageType
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -48,6 +49,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `SnapBuild` jobs to slaves."""
 
     builder_type = "snap"
+    image_types = [BuildBaseImageType.LXD, BuildBaseImageType.CHROOT]
 
     def getLogFileName(self):
         das = self.build.distro_arch_series
@@ -78,7 +80,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         if build.archive.private and build.snap.owner != build.archive.owner:
             raise SnapBuildArchiveOwnerMismatch()
 
-        chroot = build.distro_arch_series.getChroot()
+        chroot = build.distro_arch_series.getChroot(pocket=build.pocket)
         if chroot is None:
             raise CannotBuild(
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
@@ -139,6 +141,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Source branch/repository for ~%s/%s has been deleted." %
                 (build.snap.owner.name, build.snap.name))
         args["build_source_tarball"] = build.snap.build_source_tarball
+        args["private"] = build.is_private
         defer.returnValue(args)
 
     @defer.inlineCallbacks

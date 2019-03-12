@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,7 +9,6 @@ from operator import attrgetter
 import subprocess
 import unittest
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restfulclient.errors import Unauthorized
 from storm.store import Store
@@ -17,7 +16,6 @@ from testtools.matchers import Equals
 from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
-from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized as ZopeUnAuthorized
 from zope.security.proxy import removeSecurityProxy
@@ -89,6 +87,7 @@ from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.snapshot import notify_modified
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     admin_logged_in,
@@ -563,16 +562,11 @@ class TestBugTaskPrivacy(TestCaseWithFactory):
         ubuntu_team = getUtility(IPersonSet).getByEmail('support@ubuntu.com')
         bug_upstream_firefox_crashes.bug.subscribe(ubuntu_team, ubuntu_team)
 
-        old_state = Snapshot(
-            bug_upstream_firefox_crashes.bug, providing=IBug)
-        self.assertTrue(
-            bug_upstream_firefox_crashes.bug.setPrivate(True, foobar))
+        with notify_modified(
+                bug_upstream_firefox_crashes.bug, ["id", "title", "private"]):
+            self.assertTrue(
+                bug_upstream_firefox_crashes.bug.setPrivate(True, foobar))
 
-        bug_set_private = ObjectModifiedEvent(
-            bug_upstream_firefox_crashes.bug, old_state,
-            ["id", "title", "private"])
-
-        notify(bug_set_private)
         flush_database_updates()
 
         # If we now login as someone who was neither implicitly nor explicitly
@@ -2345,11 +2339,10 @@ class TestTransitionToTarget(TestCaseWithFactory):
         task = self.factory.makeBugTask(target=old)
         p = self.factory.makePerson()
         self.assertEqual(old, task.target)
-        old_state = Snapshot(task, providing=providedBy(task))
         with person_logged_in(task.owner):
-            task.bug.subscribe(p, p)
-            task.transitionToTarget(new, p)
-            notify(ObjectModifiedEvent(task, old_state, ["target"]))
+            with notify_modified(task, ["target"]):
+                task.bug.subscribe(p, p)
+                task.transitionToTarget(new, p)
         return task
 
     def assertTransitionWorks(self, a, b):

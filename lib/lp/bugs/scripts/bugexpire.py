@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BugTask expiration rules."""
@@ -10,11 +10,7 @@ __all__ = ['BugJanitor']
 
 from logging import getLogger
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import providedBy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
@@ -27,6 +23,7 @@ from lp.services.webapp.interaction import (
     setupInteraction,
     )
 from lp.services.webapp.interfaces import IPlacelessAuthUtility
+from lp.services.webapp.snapshot import notify_modified
 
 
 class BugJanitor:
@@ -87,19 +84,16 @@ class BugJanitor:
                 if bugtask.conjoined_master:
                     continue
 
-                bugtask_before_modification = Snapshot(
-                    bugtask, providing=providedBy(bugtask))
-                bugtask.transitionToStatus(
-                    BugTaskStatus.EXPIRED, self.janitor)
-                content = message_template % (
-                    bugtask.bugtargetdisplayname, self.days_before_expiration)
-                bugtask.bug.newMessage(
-                    owner=self.janitor,
-                    subject=bugtask.bug.followup_subject(),
-                    content=content)
-                notify(ObjectModifiedEvent(
-                    bugtask, bugtask_before_modification,
-                    ['status'], user=self.janitor))
+                with notify_modified(bugtask, ['status'], user=self.janitor):
+                    bugtask.transitionToStatus(
+                        BugTaskStatus.EXPIRED, self.janitor)
+                    content = message_template % (
+                        bugtask.bugtargetdisplayname,
+                        self.days_before_expiration)
+                    bugtask.bug.newMessage(
+                        owner=self.janitor,
+                        subject=bugtask.bug.followup_subject(),
+                        content=content)
                 # We commit after each expiration because emails are sent
                 # immediately in zopeless. This minimize the risk of
                 # duplicate expiration emails being sent in case an error

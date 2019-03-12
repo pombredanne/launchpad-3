@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -437,7 +437,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         results = store.using(*origin).find(
             DistroArchSeries,
             DistroArchSeries.distroseries == self)
-        return results.order_by(DistroArchSeries.architecturetag)
+        return results.order_by(DistroArchSeries.architecturetag).config(
+            distinct=True)
 
     @property
     def virtualized_architectures(self):

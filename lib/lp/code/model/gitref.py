@@ -21,6 +21,7 @@ from urlparse import urlsplit
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
 import requests
+import six
 from storm.locals import (
     DateTime,
     Int,
@@ -65,6 +66,7 @@ from lp.code.interfaces.gitref import (
     IGitRef,
     IGitRefRemoteSet,
     )
+from lp.code.interfaces.gitrule import describe_git_permissions
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
@@ -81,7 +83,11 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
-from lp.services.timeout import urlfetch
+from lp.services.timeout import (
+    reduced_timeout,
+    TimeoutError,
+    urlfetch,
+    )
 from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.interfaces import ILaunchBag
 
@@ -328,16 +334,16 @@ class GitRefMixin:
                 memcache_key += ":limit=%s" % limit
             if stop is not None:
                 memcache_key += ":stop=%s" % stop
-            if isinstance(memcache_key, unicode):
-                memcache_key = memcache_key.encode("UTF-8")
+            memcache_key = six.ensure_binary(memcache_key)
             cached_log = memcache_client.get(memcache_key)
             if cached_log is not None:
                 try:
                     log = json.loads(cached_log)
                 except Exception:
-                    logger.exception(
-                        "Cannot load cached log information for %s:%s; "
-                        "deleting" % (path, start))
+                    if logger is not None:
+                        logger.exception(
+                            "Cannot load cached log information for %s:%s; "
+                            "deleting" % (path, start))
                     memcache_client.delete(memcache_key)
         if log is None:
             if enable_hosting:
@@ -366,19 +372,38 @@ class GitRefMixin:
         return log
 
     def getCommits(self, start, limit=None, stop=None, union_repository=None,
-                   start_date=None, end_date=None, logger=None):
+                   start_date=None, end_date=None, handle_timeout=False,
+                   logger=None):
         # Circular import.
         from lp.code.model.gitrepository import parse_git_commits
 
-        log = self._getLog(
-            start, limit=limit, stop=stop, union_repository=union_repository,
-            logger=logger)
-        parsed_commits = parse_git_commits(log)
+        with reduced_timeout(1.0 if handle_timeout else 0.0):
+            try:
+                log = self._getLog(
+                    start, limit=limit, stop=stop,
+                    union_repository=union_repository, logger=logger)
+                commit_oids = [
+                    commit["sha1"] for commit in log if "sha1" in commit]
+                parsed_commits = parse_git_commits(log)
+            except TimeoutError:
+                if not handle_timeout:
+                    raise
+                if logger is not None:
+                    logger.exception(
+                        "Timeout fetching commits for %s" % self.identity)
+                # Synthesise a response based on what we have in the database.
+                commit_oids = [self.commit_sha1]
+                tip = {"sha1": self.commit_sha1, "synthetic": True}
+                optional_fields = (
+                    "author", "author_date", "committer", "committer_date",
+                    "commit_message")
+                for field in optional_fields:
+                    if getattr(self, field) is not None:
+                        tip[field] = getattr(self, field)
+                parsed_commits = {self.commit_sha1: tip}
         commits = []
-        for commit in log:
-            if "sha1" not in commit:
-                continue
-            parsed_commit = parsed_commits[commit["sha1"]]
+        for commit_oid in commit_oids:
+            parsed_commit = parsed_commits[commit_oid]
             author_date = parsed_commit.get("author_date")
             if start_date is not None:
                 if author_date is None or author_date < start_date:
@@ -389,8 +414,11 @@ class GitRefMixin:
             commits.append(parsed_commit)
         return commits
 
-    def getLatestCommits(self, quantity=10, extended_details=False, user=None):
-        commits = self.getCommits(self.commit_sha1, limit=quantity)
+    def getLatestCommits(self, quantity=10, extended_details=False, user=None,
+                         handle_timeout=False, logger=None):
+        commits = self.getCommits(
+            self.commit_sha1, limit=quantity, handle_timeout=handle_timeout,
+            logger=logger)
         if extended_details:
             # XXX cjwatson 2016-05-09: Add support for linked bugtasks once
             # those are supported for Git.
@@ -440,6 +468,12 @@ class GitRefMixin:
             # exact-match rule and therefore has a canonical position.
             rule = self.repository.addRule(self.path, user)
         rule.setGrants(grants, user)
+
+    def checkPermissions(self, person):
+        """See `IGitRef`."""
+        return describe_git_permissions(
+            self.repository.checkRefPermissions(
+                person, [self.path])[self.path])
 
 
 @implementer(IGitRef)
@@ -679,7 +713,7 @@ class GitRefFrozen(GitRefDatabaseBackedMixin):
 def _fetch_blob_from_github(repository_url, ref_path, filename):
     repo_path = urlsplit(repository_url).path.strip("/")
     if repo_path.endswith(".git"):
-        repo_path = repo_path[:len(".git")]
+        repo_path = repo_path[:-len(".git")]
     try:
         response = urlfetch(
             "https://raw.githubusercontent.com/%s/%s/%s" % (
@@ -690,6 +724,25 @@ def _fetch_blob_from_github(repository_url, ref_path, filename):
                 quote(re.sub(r"^refs/(?:heads|tags)/", "", ref_path)),
                 quote(filename)),
             use_proxy=True)
+    except requests.RequestException as e:
+        if (e.response is not None and
+                e.response.status_code == requests.codes.NOT_FOUND):
+            raise GitRepositoryBlobNotFound(
+                repository_url, filename, rev=ref_path)
+        else:
+            raise GitRepositoryScanFault(
+                "Failed to get file from Git repository at %s: %s" %
+                (repository_url, str(e)))
+    return response.content
+
+
+def _fetch_blob_from_launchpad(repository_url, ref_path, filename):
+    repo_path = urlsplit(repository_url).path.strip("/")
+    try:
+        response = urlfetch(
+            "https://git.launchpad.net/%s/plain/%s" % (
+                repo_path, quote(filename)),
+            params={"h": ref_path})
     except requests.RequestException as e:
         if (e.response is not None and
                 e.response.status_code == requests.codes.NOT_FOUND):
@@ -800,17 +853,29 @@ class GitRefRemote(GitRefMixin):
         # dispatch a build job or a code import or something like that to do
         # so.  For now, we just special-case some providers where we know
         # how to fetch a blob on its own.
-        repository = getUtility(IGitLookup).getByUrl(self.repository_url)
-        if repository is not None:
-            # This is one of our own repositories.  Doing this by URL seems
-            # gratuitously complex, but apparently we already have some
-            # examples of this on production.
-            return repository.getBlob(filename, rev=self.path)
         url = urlsplit(self.repository_url)
         if (url.hostname == "github.com" and
                 len(url.path.strip("/").split("/")) == 2):
             return _fetch_blob_from_github(
                 self.repository_url, self.path, filename)
+        if (url.hostname == "git.launchpad.net" and
+                config.vhost.mainsite.hostname != "launchpad.net"):
+            # Even if this isn't launchpad.net, we can still retrieve files
+            # from git.launchpad.net by URL, as a QA convenience.  (We check
+            # config.vhost.mainsite.hostname rather than
+            # config.codehosting.git_*_root because the dogfood instance
+            # points git_*_root to git.launchpad.net but doesn't share the
+            # production database.)
+            return _fetch_blob_from_launchpad(
+                self.repository_url, self.path, filename)
+        codehosting_host = urlsplit(config.codehosting.git_anon_root).hostname
+        if url.hostname == codehosting_host:
+            repository = getUtility(IGitLookup).getByUrl(self.repository_url)
+            if repository is not None:
+                # This is one of our own repositories.  Doing this by URL
+                # seems gratuitously complex, but apparently we already have
+                # some examples of this on production.
+                return repository.getBlob(filename, rev=self.path)
         raise GitRepositoryBlobUnsupportedRemote(self.repository_url)
 
     @property
@@ -823,6 +888,7 @@ class GitRefRemote(GitRefMixin):
         return []
 
     setGrants = _unimplemented
+    checkPermissions = _unimplemented
 
     def __eq__(self, other):
         return (

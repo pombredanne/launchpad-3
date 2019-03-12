@@ -1505,9 +1505,6 @@ class Person(
     def getAssignedBugTasksDueBefore(self, date, user):
         """See `IPerson`."""
         from lp.bugs.model.bugtask import BugTask
-        from lp.registry.model.distribution import Distribution
-        from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.productseries import ProductSeries
         today = datetime.today().date()
         search_params = BugTaskSearchParams(
             user, assignee=any(*self.participant_ids),
@@ -1519,9 +1516,6 @@ class Person(
         tasks = list(getUtility(IBugTaskSet).search(search_params))
         # Eager load the things we need that are not already eager loaded by
         # BugTaskSet.search().
-        bulk.load_related(ProductSeries, tasks, ['productseriesID'])
-        bulk.load_related(Distribution, tasks, ['distributionID'])
-        bulk.load_related(DistroSeries, tasks, ['distroseriesID'])
         bulk.load_related(Person, tasks, ['assigneeID'])
         bulk.load_related(Milestone, tasks, ['milestoneID'])
 
@@ -4129,7 +4123,8 @@ class SSHKey(SQLBase):
 
     def getFullKeyText(self):
         try:
-            ssh_keytype = getNS(base64.b64decode(self.keytext))[0]
+            ssh_keytype = getNS(base64.b64decode(self.keytext))[0].decode(
+                'ascii')
         except Exception as e:
             # We didn't always validate keys, so there might be some that
             # can't be loaded this way.

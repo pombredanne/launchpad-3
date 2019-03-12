@@ -1,4 +1,4 @@
-# Copyright 2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2018-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository access rules."""
@@ -12,6 +12,7 @@ __all__ = [
     'IGitNascentRuleGrant',
     'IGitRule',
     'IGitRuleGrant',
+    'is_rule_exact',
     ]
 
 from lazr.restful.fields import Reference
@@ -43,6 +44,18 @@ from lp.services.fields import (
     )
 
 
+def is_rule_exact(rule):
+    """Is this an exact-match rule?
+
+    :param rule: An `IGitRule` or `IGitNascentRule`.
+    :return: True if the rule is for an exact reference name, or False if it
+        is for a wildcard.
+    """
+    # turnip's glob_to_re only treats * as special, so any rule whose
+    # pattern does not contain * must be an exact-match rule.
+    return "*" not in rule.ref_pattern
+
+
 class IGitRuleView(Interface):
     """`IGitRule` attributes that require launchpad.View."""
 
@@ -70,12 +83,6 @@ class IGitRuleView(Interface):
     date_last_modified = Datetime(
         title=_("Date last modified"), required=True, readonly=True,
         description=_("The time when this rule was last modified."))
-
-    is_exact = Bool(
-        title=_("Is this an exact-match rule?"), required=True, readonly=True,
-        description=_(
-            "True if this rule is for an exact reference name, or False if "
-            "it is for a wildcard."))
 
     grants = Attribute("The access grants for this rule.")
 
@@ -157,6 +164,10 @@ class IGitRuleGrantView(Interface):
         title=_("Grantee"), required=False, readonly=True,
         vocabulary="ValidPersonOrTeam",
         description=_("The person being granted access."))
+
+    combined_grantee = Attribute(
+        "The overall grantee of this grant: either a `GitGranteeType` (other "
+        "than `PERSON`) or an `IPerson`.")
 
     date_created = Datetime(
         title=_("Date created"), required=True, readonly=True,

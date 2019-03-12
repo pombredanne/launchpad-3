@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -2407,6 +2407,44 @@ class TestPublisher(TestPublisherBase):
             PackagePublishingPocket.RELEASE, 'main', set())
 
         self.assertFalse(os.path.exists(os.path.join(i18n_root, 'Index')))
+
+    def testReadIndexFileHashesCompression(self):
+        """Test compressed file handling in _readIndexFileHashes."""
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+        contents = b'test'
+        path = os.path.join(
+            publisher._config.distsroot, 'breezy-autotest', 'Test')
+        os.makedirs(os.path.dirname(path))
+        for suffix, open_func in (
+                ('', open),
+                ('.gz', gzip.open),
+                ('.bz2', bz2.BZ2File),
+                ('.xz', partial(lzma.LZMAFile, format=lzma.FORMAT_XZ)),
+                ):
+            with open_func(path + suffix, mode='wb') as f:
+                f.write(contents)
+            self.assertEqual(
+                {
+                    'md5sum': {
+                        'md5sum': hashlib.md5(contents).hexdigest(),
+                        'name': 'Test',
+                        'size': len(contents),
+                        },
+                    'sha1': {
+                        'sha1': hashlib.sha1(contents).hexdigest(),
+                        'name': 'Test',
+                        'size': len(contents),
+                        },
+                    'sha256': {
+                        'sha256': hashlib.sha256(contents).hexdigest(),
+                        'name': 'Test',
+                        'size': len(contents),
+                        },
+                    },
+                publisher._readIndexFileHashes('breezy-autotest', 'Test'))
+            os.remove(path + suffix)
 
 
 class TestArchiveIndices(TestPublisherBase):

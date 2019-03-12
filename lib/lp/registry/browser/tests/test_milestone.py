@@ -570,19 +570,19 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
         logout()
 
     def test_bugtasks_queries(self):
-        # The view.bugtasks attribute will make seven queries:
+        # The view.bugtasks attribute will make the following queries:
         #  1. Load ubuntu.currentseries.
         #  2. Check if the user is in the admin team.
         #  3. Check if the user is in the owner of the admin team.
         #  4. Load bugtasks and bugs.
-        #  5. load the source package names.
+        #  5. Load the distributions and source package names.
         #  6. Load assignees (Person, Account, and EmailAddress).
         #  7. Load links to specifications.
         #  8. Load links to branches.
         #  9. Load links to milestones.
         bugtask_count = 10
         self.assert_bugtasks_query_count(
-            self.milestone, bugtask_count, query_limit=11)
+            self.milestone, bugtask_count, query_limit=12)
 
     def test_milestone_eager_loading(self):
         # Verify that the number of queries does not increase with more

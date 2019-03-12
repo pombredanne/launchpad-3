@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker interfaces."""
@@ -192,6 +192,13 @@ class BugTrackerType(DBEnumeratedType):
         The issue tracker for projects hosted on GitHub.
         """)
 
+    GITLAB = DBItem(13, """
+        GitLab Issues
+
+        GitLab is a single application for the entire software development
+        lifecycle.
+        """)
+
 
 # A list of the BugTrackerTypes that don't need a remote product to be
 # able to return a bug filing URL. We use a whitelist rather than a
@@ -200,6 +207,7 @@ class BugTrackerType(DBEnumeratedType):
 # embarrassingly useless URLs to users.
 SINGLE_PRODUCT_BUGTRACKERTYPES = [
     BugTrackerType.GITHUB,
+    BugTrackerType.GITLAB,
     BugTrackerType.GOOGLE_CODE,
     BugTrackerType.MANTIS,
     BugTrackerType.PHPPROJECT,

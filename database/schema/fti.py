@@ -11,9 +11,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from distutils.version import LooseVersion
 from optparse import OptionParser
-import os.path
 import sys
 from textwrap import dedent
 
@@ -238,19 +236,6 @@ def needs_refresh(con, table, columns):
         """ % (quote(current_columns), quote(table)))
 
     return True
-
-
-def get_pgversion(con):
-    rows = execute(con, r"show server_version", results=True)
-    return LooseVersion(rows[0][0])
-
-
-def get_tsearch2_sql_path(con):
-    major, minor = get_pgversion(con).version[:2]
-    path = os.path.join(
-        PGSQL_BASE, '%d.%d' % (major, minor), 'contrib', 'tsearch2.sql')
-    assert os.path.exists(path), '%s does not exist' % path
-    return path
 
 
 # Script options and arguments parsed from the command line by main()

@@ -101,6 +101,7 @@ from lp.services.comments.interfaces.conversation import (
     )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.propertycache import (
     cachedproperty,
@@ -797,6 +798,15 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 'launchpad.Edit', self.context),
             })
 
+    @property
+    def show_diff_update_link(self):
+        latest_preview = self.context.getLatestDiffUpdateJob()
+        # Having no jobs is a valid situation as there is a prune job.
+        # We don't need to allow a rescan
+        if not latest_preview:
+            return False
+        return latest_preview.job.status == JobStatus.FAILED
+
 
 @delegate_to(ICodeReviewVoteReference)
 class DecoratedCodeReviewVoteReference:
@@ -920,6 +930,19 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # Now sort so the most recently created is first.
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
+
+
+class BranchMergeProposalScheduleUpdateDiffView(LaunchpadEditFormView):
+
+    schema = Interface
+
+    field_names = []
+
+    @action('Update', name='update')
+    def update(self, action, data):
+        self.context.scheduleDiffUpdates()
+        self.request.response.addNotification("Diff update scheduled")
+        self.next_url = canonical_url(self.context)
 
 
 class IReviewRequest(Interface):

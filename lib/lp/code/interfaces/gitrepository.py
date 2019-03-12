@@ -25,6 +25,7 @@ from lazr.restful.declarations import (
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_destructor_operation,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -365,6 +366,9 @@ class IGitRepositoryView(IHasRecipes):
     def getCodebrowseUrlForRevision(commit):
         """The URL to the commit of the merge to the target branch"""
 
+    def getLatestScanJob():
+        """Return the last IGitRefScanJobSource for this repository"""
+
     def visibleByUser(user):
         """Can the specified user see this repository?"""
 
@@ -639,6 +643,14 @@ class IGitRepositoryView(IHasRecipes):
         :return: A `ResultSet` of `IGitActivity`.
         """
 
+    def getPrecachedActivity(**kwargs):
+        """Activity log entries are preloaded.
+
+        :param changed_after: If supplied, only return entries for changes
+            made after this date.
+        :return: A `ResultSet` of `IGitActivity`.
+        """
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.
@@ -757,12 +769,18 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param user: The `IPerson` who is moving the rule.
         """
 
-    def findRuleGrantsByGrantee(grantee):
+    def findRuleGrantsByGrantee(grantee, include_transitive=True,
+                                ref_pattern=None):
         """Find the grants for a grantee applied to this repository.
 
         :param grantee: The `IPerson` to search for, or an item of
             `GitGranteeType` other than `GitGranteeType.PERSON` to search
             for some other kind of entity.
+        :param include_transitive: If False, match `grantee` exactly; if
+            True (the default), also accept teams of which `grantee` is a
+            member.
+        :param ref_pattern: If not None, only return grants for rules with
+            this ref_pattern.
         """
 
     @export_read_operation()
@@ -808,6 +826,36 @@ class IGitRepositoryEdit(IWebhookTarget):
     @operation_for_version("devel")
     def setRules(rules, user):
         """Set the access rules for this repository."""
+
+    def checkRefPermissions(person, ref_paths):
+        """Check a person's permissions on some references in this repository.
+
+        :param person: An `IPerson` to check, or
+            `GitGranteeType.REPOSITORY_OWNER` to check an anonymous
+            repository owner.
+        :param ref_paths: An iterable of reference paths (each of which may
+            be either bytes or text).
+        :return: A dict mapping reference paths to sets of
+            `GitPermissionType`, corresponding to the requested person's
+            effective permissions on each of the requested references.
+        """
+
+    @operation_parameters(
+        person=Reference(title=_("Person to check"), schema=IPerson),
+        paths=List(title=_("Reference paths"), value_type=TextLine()))
+    @export_operation_as("checkRefPermissions")
+    @export_read_operation()
+    @operation_for_version("devel")
+    def api_checkRefPermissions(person, paths):
+        """Check a person's permissions on some references in this repository.
+
+        :param person: An `IPerson` to check.
+        :param paths: An iterable of reference paths.
+        :return: A dict mapping reference paths to lists of zero or more of
+            "create", "push", and "force-push", indicating the requested
+            person's effective permissions on each of the requested
+            references.
+        """
 
     @export_read_operation()
     @operation_for_version("devel")

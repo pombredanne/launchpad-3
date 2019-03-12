@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -70,7 +70,8 @@ class SnapArchiveWidget(BrowserWidget, InputWidget):
 
     @property
     def main_archive(self):
-        if ISnap.providedBy(self.context.context):
+        if (ISnap.providedBy(self.context.context) and
+                self.context.context.distro_series is not None):
             return self.context.context.distro_series.main_archive
         else:
             return getUtility(ILaunchpadCelebrities).ubuntu.main_archive

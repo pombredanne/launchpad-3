@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A UIFactory useful for code imports."""
@@ -12,6 +12,7 @@ import time
 
 from bzrlib.ui import NoninteractiveUIFactory
 from bzrlib.ui.text import TextProgressView
+import six
 
 
 class LoggingUIFactory(NoninteractiveUIFactory):
@@ -45,9 +46,7 @@ class LoggingUIFactory(NoninteractiveUIFactory):
             "%s", self.format_user_warning(warning_id, message_args))
 
     def show_warning(self, msg):
-        if isinstance(msg, unicode):
-            msg = msg.encode("utf-8")
-        self.logger.warning("%s", msg)
+        self.logger.warning("%s", six.ensure_binary(msg))
 
     def get_username(self, prompt, **kwargs):
         return None

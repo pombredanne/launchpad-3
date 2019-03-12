@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import tempfile
 import time
+from uuid import uuid4
 
 from bzrlib import (
     trace,
@@ -1229,6 +1230,50 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger(),
             opener_policy=opener_policy)
+
+    def test_pushBazaarBranch_saves_bzr_svn_cache(self):
+        # BzrSvnImportWorker.pushBazaarBranch saves a tarball of the bzr-svn
+        # cache in the worker's ImportDataStore.
+        from bzrlib.plugins.svn.cache import get_cache
+        worker = self.makeImportWorker(self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')]),
+            opener_policy=AcceptAnythingPolicy())
+        uuid = subvertpy.ra.RemoteAccess(worker.source_details.url).get_uuid()
+        cache_dir = get_cache(uuid).create_cache_dir()
+        cache_dir_contents = os.listdir(cache_dir)
+        self.assertNotEqual([], cache_dir_contents)
+        opener = SafeBranchOpener(worker._opener_policy, worker.probers)
+        remote_branch = opener.open(worker.source_details.url)
+        worker.pushBazaarBranch(
+            self.make_branch('.'), remote_branch=remote_branch)
+        worker.import_data_store.fetch('svn-cache.tar.gz')
+        extract_tarball('svn-cache.tar.gz', '.')
+        self.assertContentEqual(cache_dir_contents, os.listdir(uuid))
+
+    def test_getBazaarBranch_fetches_bzr_svn_cache(self):
+        # BzrSvnImportWorker.getBazaarBranch fetches the tarball of the
+        # bzr-svn cache from the worker's ImportDataStore and expands it
+        # into the appropriate cache directory.
+        from bzrlib.plugins.svn.cache import get_cache
+        worker = self.makeImportWorker(self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')]),
+            opener_policy=AcceptAnythingPolicy())
+        # Store a tarred-up cache in the store.
+        content = self.factory.getUniqueString()
+        uuid = str(uuid4())
+        os.makedirs(os.path.join('cache', uuid))
+        with open(os.path.join('cache', uuid, 'svn-cache'), 'w') as cache_file:
+            cache_file.write(content)
+        create_tarball('cache', 'svn-cache.tar.gz', filenames=[uuid])
+        worker.import_data_store.put('svn-cache.tar.gz')
+        # Make sure there's a Bazaar branch in the branch store.
+        branch = self.make_branch('branch')
+        ToBzrImportWorker.pushBazaarBranch(worker, branch)
+        # Finally, fetching the tree gets the cache too.
+        worker.getBazaarBranch()
+        cache_dir = get_cache(uuid).create_cache_dir()
+        with open(os.path.join(cache_dir, 'svn-cache')) as cache_file:
+            self.assertEqual(content, cache_file.read())
 
 
 class TestBzrImport(WorkerTest, TestActualImportMixin,

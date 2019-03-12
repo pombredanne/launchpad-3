@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import worker. This imports code from foreign repositories."""
@@ -321,12 +321,11 @@ class CodeImportSourceDetails:
         arguments = list(arguments)
         target_id = arguments.pop(0)
         rcstype = arguments.pop(0)
-        # XXX cjwatson 2016-10-12: Remove compatibility code once the
-        # scheduler always passes both source and target types.
-        if ':' in rcstype:
-            rcstype, target_rcstype = rcstype.split(':', 1)
-        else:
-            target_rcstype = 'bzr'
+        if ':' not in rcstype:
+            raise AssertionError(
+                "'%s' does not contain both source and target types." %
+                rcstype)
+        rcstype, target_rcstype = rcstype.split(':', 1)
         if rcstype in ['bzr-svn', 'git', 'bzr']:
             url = arguments.pop(0)
             if target_rcstype == 'bzr':
@@ -600,7 +599,7 @@ class ToBzrImportWorker(ImportWorker):
             self.required_format, self.needs_bzr_tree,
             stacked_on_url=self.source_details.stacked_on_url)
 
-    def pushBazaarBranch(self, bazaar_branch):
+    def pushBazaarBranch(self, bazaar_branch, remote_branch=None):
         """Push the updated Bazaar branch to the server.
 
         :return: True if revisions were transferred.
@@ -778,7 +777,7 @@ class PullingImportWorker(ToBzrImportWorker):
                 else:
                     raise
             self._logger.info("Pushing local import branch to central store.")
-            self.pushBazaarBranch(bazaar_branch)
+            self.pushBazaarBranch(bazaar_branch, remote_branch=remote_branch)
             self._logger.info("Job complete.")
             return result
         finally:
@@ -844,7 +843,7 @@ class GitImportWorker(PullingImportWorker):
             extract_tarball(local_name, git_db_dir)
         return branch
 
-    def pushBazaarBranch(self, bazaar_branch):
+    def pushBazaarBranch(self, bazaar_branch, remote_branch=None):
         """See `ToBzrImportWorker.pushBazaarBranch`.
 
         In addition to the superclass' behaviour, we store bzr-git's cache
@@ -893,6 +892,42 @@ class BzrSvnImportWorker(PullingImportWorker):
         """See `PullingImportWorker.probers`."""
         from bzrlib.plugins.svn import SvnRemoteProber
         return [SvnRemoteProber]
+
+    def getBazaarBranch(self):
+        """See `ToBzrImportWorker.getBazaarBranch`.
+
+        In addition to the superclass' behaviour, we retrieve bzr-svn's
+        cache from the import data store and put it where bzr-svn will find
+        it.
+        """
+        from bzrlib.plugins.svn.cache import create_cache_dir
+        branch = super(BzrSvnImportWorker, self).getBazaarBranch()
+        local_name = 'svn-cache.tar.gz'
+        if self.import_data_store.fetch(local_name):
+            extract_tarball(local_name, create_cache_dir())
+        return branch
+
+    def pushBazaarBranch(self, bazaar_branch, remote_branch=None):
+        """See `ToBzrImportWorker.pushBazaarBranch`.
+
+        In addition to the superclass' behaviour, we store bzr-svn's cache
+        directory in the import data store.
+        """
+        from bzrlib.plugins.svn.cache import get_cache
+        non_trivial = super(BzrSvnImportWorker, self).pushBazaarBranch(
+            bazaar_branch)
+        if remote_branch is not None:
+            cache = get_cache(remote_branch.repository.uuid)
+            cache_dir = cache.create_cache_dir()
+            local_name = 'svn-cache.tar.gz'
+            create_tarball(
+                os.path.dirname(cache_dir), local_name,
+                filenames=[os.path.basename(cache_dir)])
+            self.import_data_store.put(local_name)
+            # XXX cjwatson 2019-02-06: Once this is behaving well on
+            # production, consider removing the local cache after pushing a
+            # copy of it to the import data store.
+        return non_trivial
 
 
 class BzrImportWorker(PullingImportWorker):

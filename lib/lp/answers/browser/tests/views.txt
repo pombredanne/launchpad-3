@@ -26,6 +26,18 @@ QuestionSubscriptionView
 This view is used to subscribe and unsubscribe from a question.
 Subscription is done when the user click on the 'Subscribe' button.
 
+Register an event listener that will print events it receives.
+
+    >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
+    >>> from lp.answers.interfaces.question import IQuestion
+    >>> from lp.testing.event import TestEventListener
+
+    >>> def print_modified_event(object, event):
+    ...     print("Received ObjectModifiedEvent: %s" % (
+    ...         ", ".join(sorted(event.edited_fields))))
+    >>> question_event_listener = TestEventListener(
+    ...     IQuestion, IObjectModifiedEvent, print_modified_event)
+
     >>> view = create_initialized_view(question_three, name='+subscribe')
     >>> print(view.label)
     Subscribe to question
@@ -36,6 +48,7 @@ Subscription is done when the user click on the 'Subscribe' button.
     >>> form = {'subscribe': 'Subscribe'}
     >>> view = create_initialized_view(
     ...     question_three, name='+subscribe', form=form)
+    Received ObjectModifiedEvent: subscribers
     >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     True
 
@@ -58,6 +71,7 @@ Unsubscription works in a similar manner.
     >>> form = {'subscribe': 'Unsubscribe'}
     >>> view = create_initialized_view(
     ...     question_three, name='+subscribe', form=form)
+    Received ObjectModifiedEvent: subscribers
     >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     False
 
@@ -67,6 +81,8 @@ Unsubscription works in a similar manner.
 
     >>> view.request.response.getHeader('Location')
     '.../+question/3'
+
+    >>> question_event_listener.unregister()
 
 
 QuestionWorkflowView

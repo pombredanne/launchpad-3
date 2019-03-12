@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to Product."""
@@ -19,7 +19,6 @@ import itertools
 import operator
 
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.declarations import error_status
 from lazr.restful.utils import safe_hasattr
 import pytz
@@ -48,10 +47,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import (
-    implementer,
-    providedBy,
-    )
+from zope.interface import implementer
 
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.faq import (
@@ -205,6 +201,7 @@ from lp.services.propertycache import (
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.snapshot import notify_modified
 from lp.translations.enums import TranslationPermission
 from lp.translations.interfaces.customlanguagecode import (
     IHasCustomLanguageCodes,
@@ -1082,11 +1079,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             # This is being initialized.
             self._owner = new_owner
         elif self.owner != new_owner:
-            old_product = Snapshot(self, providing=providedBy(self))
-            self._owner = new_owner
-            notify(ObjectModifiedEvent(
-                self, object_before_modification=old_product,
-                edited_fields=['_owner']))
+            with notify_modified(self, ['_owner']):
+                self._owner = new_owner
         else:
             # The new owner is the same as the current owner.
             pass
