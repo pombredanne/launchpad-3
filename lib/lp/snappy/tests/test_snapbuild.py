@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build features."""
@@ -22,11 +22,13 @@ from testtools.matchers import (
     Equals,
     Is,
     MatchesDict,
+    MatchesListwise,
     MatchesStructure,
     )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -38,6 +40,7 @@ from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
@@ -774,3 +777,124 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         browser = self.getNonRedirectingBrowser(user=self.person)
         for file_url in file_urls:
             self.assertCanOpenRedirectedUrl(browser, file_url)
+
+
+class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
+    """Test SnapBuild macaroon issuing and verification."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestSnapBuildMacaroonIssuer, self).setUp()
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
+
+    def test_issueMacaroon_refuses_public_snap(self):
+        build = self.factory.makeSnapBuild()
+        issuer = getUtility(IMacaroonIssuer, "snap-build")
+        self.assertRaises(
+            ValueError, removeSecurityProxy(issuer).issueMacaroon, build)
+
+    def test_issueMacaroon_good(self):
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(private=True))
+        issuer = getUtility(IMacaroonIssuer, "snap-build")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.assertEqual("launchpad.dev", macaroon.location)
+        self.assertEqual("snap-build", macaroon.identifier)
+        self.assertThat(macaroon.caveats, MatchesListwise([
+            MatchesStructure.byEquality(
+                caveat_id="lp.snap-build %s" % build.id),
+            ]))
+
+    def test_checkMacaroonIssuer_good(self):
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(private=True))
+        issuer = getUtility(IMacaroonIssuer, "snap-build")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.assertTrue(issuer.checkMacaroonIssuer(macaroon))
+
+    def test_checkMacaroonIssuer_wrong_location(self):
+        issuer = getUtility(IMacaroonIssuer, "snap-build")
+        macaroon = Macaroon(
+            location="another-location",
+            key=removeSecurityProxy(issuer)._root_secret)
+        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
+
+    def test_checkMacaroonIssuer_wrong_key(self):
+        issuer = getUtility(IMacaroonIssuer, "snap-build")
+        macaroon = Macaroon(
+            location=config.vhost.mainsite.hostname, key="another-secret")
+        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
+
+    def test_verifyMacaroon_good(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(build)
+        self.assertTrue(issuer.verifyMacaroon(macaroon, ref.repository))
+
+    def test_verifyMacaroon_wrong_location(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = Macaroon(
+            location="another-location", key=issuer._root_secret)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+
+    def test_verifyMacaroon_wrong_key(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = Macaroon(
+            location=config.vhost.mainsite.hostname, key="another-secret")
+        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+
+    def test_verifyMacaroon_not_building(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(build)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+
+    def test_verifyMacaroon_wrong_build(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        other_build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(private=True))
+        other_build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(other_build)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+
+    def test_verifyMacaroon_wrong_repository(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        other_repository = self.factory.makeGitRepository()
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(build)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, other_repository))
