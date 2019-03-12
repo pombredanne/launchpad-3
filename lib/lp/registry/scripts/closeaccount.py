@@ -25,10 +25,7 @@ from lp.registry.model.person import (
     PersonSettings,
     )
 from lp.services.database import postgresql
-from lp.services.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
+from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import (
@@ -42,6 +39,7 @@ from lp.services.scripts.base import (
     LaunchpadScriptFailure,
     )
 from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
 
@@ -320,13 +318,13 @@ def close_account(username, log):
     # corresponding ArchiveSubscriber rows; but even once PPA authorisation
     # is handled dynamically, we probably still want to have the per-person
     # audit trail here.
-    store.find(
-        ArchiveSubscriber,
+    archive_subscriber_ids = set(store.find(
+        ArchiveSubscriber.id,
         ArchiveSubscriber.subscriber_id == person.id,
-        ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT).set(
-            date_cancelled=UTC_NOW,
-            cancelled_by_id=janitor.id,
-            status=ArchiveSubscriberStatus.CANCELLED)
+        ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT))
+    if archive_subscriber_ids:
+        getUtility(IArchiveSubscriberSet).cancel(
+            archive_subscriber_ids, janitor)
     skip.add(('archivesubscriber', 'subscriber'))
     skip.add(('archiveauthtoken', 'person'))
 

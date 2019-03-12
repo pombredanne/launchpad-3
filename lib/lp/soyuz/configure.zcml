@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -515,7 +515,10 @@
         class="lp.soyuz.model.archivesubscriber.ArchiveSubscriberSet"
         provides="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriberSet">
         <allow
-            interface="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriberSet"/>
+            interface="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriberSetView"/>
+        <require
+            permission="launchpad.Admin"
+            interface="lp.soyuz.interfaces.archivesubscriber.IArchiveSubscriberSetAdmin"/>
     </securedutility>
 
     <!-- PersonalArchiveSubscription -->
