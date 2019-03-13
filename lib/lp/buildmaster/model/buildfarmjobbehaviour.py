@@ -17,6 +17,7 @@ import tempfile
 
 import transaction
 from twisted.internet import defer
+from twisted.web import xmlrpc
 from zope.component import getUtility
 
 from lp.buildmaster.enums import (
@@ -52,6 +53,9 @@ class BuildFarmJobBehaviourBase:
         """Store a reference to the job_type with which we were created."""
         self.build = build
         self._builder = None
+        self._authserver = xmlrpc.Proxy(
+            config.builddmaster.authentication_endpoint,
+            connectTimeout=config.builddmaster.authentication_timeout)
 
     @property
     def archive(self):
