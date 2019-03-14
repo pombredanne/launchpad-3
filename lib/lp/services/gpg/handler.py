@@ -457,7 +457,12 @@ class GPGHandler:
         if not key.exists_in_local_keyring:
             pubkey = self._getPubKey(fingerprint)
             key = self.importPublicKey(pubkey)
-            if fingerprint != key.fingerprint:
+            # XXX cjwatson 2019-03-13: Remove affordance for 64-bit key IDs
+            # once we're on GnuPG 2.2.7 and GPGME 1.11.0.  See comment in
+            # getVerifiedSignature.
+            if (fingerprint != key.fingerprint and
+                not (len(fingerprint) == 16 and
+                     key.fingerprint.endswith(fingerprint))):
                 ctx = self._getContext()
                 with gpgme_timeline("delete", key.fingerprint):
                     ctx.delete(key.key)
