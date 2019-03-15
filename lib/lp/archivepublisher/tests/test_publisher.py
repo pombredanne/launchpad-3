@@ -2199,7 +2199,7 @@ class TestPublisher(TestPublisherBase):
         # to republish that suite.
         series_path = os.path.join(self.config.distsroot, 'breezy-autotest')
         cnf_path = os.path.join(series_path, 'main', 'cnf')
-        cnf_names = ('Commands-amd64.gz', 'Commands-i386.gz')
+        cnf_names = ('Commands-amd64.xz', 'Commands-i386.xz')
         os.makedirs(cnf_path)
         for name in cnf_names:
             with gzip.GzipFile(os.path.join(cnf_path, name), 'wb') as f:

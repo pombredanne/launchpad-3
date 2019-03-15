@@ -1215,7 +1215,7 @@ class Publisher(object):
             cnf_dir = os.path.join(suite_dir, component, "cnf")
             try:
                 for cnf_file in os.listdir(cnf_dir):
-                    if dep11_file.startswith("Commands-"):
+                    if cnf_file.startswith("Commands-"):
                         cnf_path = os.path.join(
                             component, "cnf", cnf_file)
                         extra_files.add(remove_suffix(cnf_path))
