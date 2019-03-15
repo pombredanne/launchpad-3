@@ -2203,7 +2203,7 @@ class TestPublisher(TestPublisherBase):
         cnf_names = ('Commands-amd64.xz', 'Commands-i386.xz')
         os.makedirs(cnf_path)
         for name in cnf_names:
-            with gzip.GzipFile(os.path.join(cnf_path, name), 'wb') as f:
+            with lzma.LZMAFile(os.path.join(cnf_path, name), 'wb') as f:
                 f.write(name)
         publisher.markPocketDirty(
             self.ubuntutest.getSeries('breezy-autotest'),
