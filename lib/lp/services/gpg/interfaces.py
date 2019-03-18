@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -406,6 +406,9 @@ class IPymeKey(Interface):
 
         :return: a string containing the exported key.
         """
+
+    def matches(fingerprint):
+        """Return True if and only if this fingerprint matches this key."""
 
 
 class IPymeUserId(Interface):
