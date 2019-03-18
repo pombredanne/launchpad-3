@@ -457,12 +457,7 @@ class GPGHandler:
         if not key.exists_in_local_keyring:
             pubkey = self._getPubKey(fingerprint)
             key = self.importPublicKey(pubkey)
-            # XXX cjwatson 2019-03-13: Remove affordance for 64-bit key IDs
-            # once we're on GnuPG 2.2.7 and GPGME 1.11.0.  See comment in
-            # getVerifiedSignature.
-            if (fingerprint != key.fingerprint and
-                not (len(fingerprint) == 16 and
-                     key.fingerprint.endswith(fingerprint))):
+            if not key.matches(fingerprint):
                 ctx = self._getContext()
                 with gpgme_timeline("delete", key.fingerprint):
                     ctx.delete(key.key)
@@ -658,7 +653,7 @@ class PymeKey:
             self.keysize, self.algorithm.title, self.fingerprint)
 
     def export(self):
-        """See `PymeKey`."""
+        """See `IPymeKey`."""
         if self.secret:
             # XXX cprov 20081014: gpgme_op_export() only supports public keys.
             # See http://www.fifi.org/cgi-bin/info2www?(gpgme)Exporting+Keys
@@ -673,6 +668,18 @@ class PymeKey:
             context.export(self.fingerprint.encode('ascii'), keydata)
 
         return keydata.getvalue()
+
+    def matches(self, fingerprint):
+        """See `IPymeKey`."""
+        for subkey in self.key.subkeys:
+            if fingerprint == subkey.fpr:
+                return True
+            # XXX cjwatson 2019-03-13: Remove affordance for 64-bit key IDs
+            # once we're on GnuPG 2.2.7 and GPGME 1.11.0.  See comment in
+            # getVerifiedSignature.
+            if len(fingerprint) == 16 and subkey.fpr.endswith(fingerprint):
+                return True
+        return False
 
 
 @implementer(IPymeUserId)
