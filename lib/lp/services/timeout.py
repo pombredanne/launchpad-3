@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers to time out external operations."""
@@ -396,7 +396,8 @@ class URLFetcher:
 
 def urlfetch(url, **request_kwargs):
     """Wrapper for `requests.get()` that times out."""
-    return URLFetcher().fetch(url, **request_kwargs)
+    with default_timeout(config.launchpad.urlfetch_timeout):
+        return URLFetcher().fetch(url, **request_kwargs)
 
 
 class TransportWithTimeout(Transport):
