@@ -193,6 +193,22 @@ class TestGPGHandler(TestCase):
             GPGKeyMismatchOnServer, gpghandler.retrieveKey, fingerprint)
         self.assertEqual([], list(gpghandler.localKeys()))
 
+    def test_retrieveKey_allows_subkey(self):
+        # retrieveKey allows retrieving keys by subkey fingerprint.
+        keyserver = self.useFixture(KeyServerTac())
+        primary_fingerprint = "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+        subkey_fingerprint = "A2E916260726EE2BF86501A14244E5A6067595FF"
+        shutil.copy2(
+            test_pubkey_file_from_email("foo.bar@canonical.com"),
+            os.path.join(keyserver.root, "0x%s.get" % subkey_fingerprint))
+        gpghandler = getUtility(IGPGHandler)
+        key = gpghandler.retrieveKey(subkey_fingerprint)
+        self.assertEqual(primary_fingerprint, key.fingerprint)
+        self.assertTrue(key.matches(primary_fingerprint))
+        self.assertTrue(key.matches(subkey_fingerprint))
+        self.assertTrue(key.matches(subkey_fingerprint[-16:]))
+        self.assertFalse(key.matches(subkey_fingerprint[:-1] + "0"))
+
     def test_retrieveKey_allows_64bit_key_id(self):
         # In order to support retrieving keys during signature verification,
         # retrieveKey temporarily allows 64-bit key IDs.
