@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the SignedMessage class."""
@@ -32,6 +32,7 @@ from lp.testing.gpgkeys import (
     import_public_test_keys,
     import_secret_test_key,
     )
+from lp.testing.keyserver import KeyServerTac
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
@@ -44,6 +45,9 @@ class TestSignedMessage(TestCaseWithFactory):
         # Login with admin roles as we aren't testing access here.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
         import_public_test_keys()
+        # Ensure that tests will try to fetch keys from the keyserver.
+        self.useFixture(KeyServerTac())
+        getUtility(IGPGHandler).resetLocalState()
 
     def test_unsigned_message(self):
         # An unsigned message will not have a signature nor signed content,
@@ -73,6 +77,7 @@ class TestSignedMessage(TestCaseWithFactory):
         msg = self.factory.makeSignedMessage(
             email_address=sender.preferredemail.email,
             body=body, signing_context=signing_context)
+        getUtility(IGPGHandler).resetLocalState()
         self.assertFalse(msg.is_multipart())
         return signed_message_from_string(msg.as_string())
 
@@ -134,6 +139,7 @@ class TestSignedMessage(TestCaseWithFactory):
         signature = gpghandler.signContent(
             canonicalise_line_endings(body_text.as_string()),
             key, 'test', gpgme.SIG_MODE_DETACH)
+        gpghandler.resetLocalState()
 
         attachment = Message()
         attachment.set_payload(signature)
