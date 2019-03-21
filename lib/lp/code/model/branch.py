@@ -919,7 +919,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         deletion_operations.extend(
             DeletionCallable(
                 recipe, _('This recipe uses this branch.'), recipe.destroySelf)
-            for recipe in self.recipes)
+            for recipe in self._recipes)
         if not getUtility(ISnapSet).findByBranch(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, _('Some snap packages build from this branch.'),
