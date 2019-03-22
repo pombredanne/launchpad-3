@@ -148,6 +148,10 @@ def close_account(username, log):
         ('usertouseremail', 'recipient'),
         ('usertouseremail', 'sender'),
         ('xref', 'creator'),
+
+        # This is maintained by trigger functions and a garbo job.  It
+        # doesn't need to be updated immediately.
+        ('bugsummary', 'viewed_by'),
         }
     reference_names = {
         (src_tab, src_col) for src_tab, src_col, _, _, _, _ in references}
