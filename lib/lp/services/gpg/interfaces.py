@@ -2,6 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'get_gpg_path',
+    'get_gpgme_context',
     'GPGKeyAlgorithm',
     'GPGKeyDoesNotExistOnServer',
     'GPGKeyExpired',
@@ -22,6 +24,7 @@ __all__ = [
     ]
 
 import httplib
+import os.path
 import re
 
 from lazr.enum import (
@@ -54,6 +57,28 @@ def valid_keyid(keyid):
         return True
     else:
         return False
+
+
+def get_gpg_path():
+    """Return the path to the GPG executable we prefer.
+
+    We stick to GnuPG 1 until we've worked out how to get things working
+    with GnuPG 2.
+    """
+    if os.path.exists("/usr/bin/gpg1"):
+        return "/usr/bin/gpg1"
+    else:
+        return "/usr/bin/gpg"
+
+
+def get_gpgme_context():
+    """Return a new appropriately-configured GPGME context."""
+    import gpgme
+
+    context = gpgme.Context()
+    context.set_engine_info(gpgme.PROTOCOL_OpenPGP, get_gpg_path(), None)
+    context.armor = True
+    return context
 
 
 # XXX: cprov 2004-10-04:

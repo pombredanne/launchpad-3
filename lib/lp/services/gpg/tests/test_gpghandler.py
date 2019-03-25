@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.gpg.interfaces import (
+    get_gpg_path,
     GPGKeyDoesNotExistOnServer,
     GPGKeyMismatchOnServer,
     GPGKeyTemporarilyNotFoundError,
@@ -327,7 +328,8 @@ class TestGPGHandler(TestCase):
             # plumbing.
             with open(os.devnull, "w") as devnull:
                 gpg_proc = subprocess.Popen(
-                    ["gpg", "--quiet", "--status-fd", "1", "--verify"],
+                    [get_gpg_path(), "--quiet", "--status-fd", "1",
+                     "--verify"],
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                     stderr=devnull, universal_newlines=True)
             status = gpg_proc.communicate(signed_content)[0].splitlines()
