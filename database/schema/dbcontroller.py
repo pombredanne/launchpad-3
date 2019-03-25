@@ -46,10 +46,16 @@ def streaming_sync(con, timeout=None):
     wal_point = cur.fetchone()[0]
     start_time = time.time()
     while timeout is None or time.time() < start_time + timeout:
-        cur.execute("""
-            SELECT FALSE FROM pg_stat_replication
-            WHERE replay_location < %s LIMIT 1
-            """, (wal_point,))
+        if con.server_version >= 100000:
+            cur.execute("""
+                SELECT FALSE FROM pg_stat_replication
+                WHERE replay_lsn < %s LIMIT 1
+                """, (wal_point,))
+        else:
+            cur.execute("""
+                SELECT FALSE FROM pg_stat_replication
+                WHERE replay_location < %s LIMIT 1
+                """, (wal_point,))
         if cur.fetchone() is None:
             # All slaves, possibly 0, are in sync.
             return True
