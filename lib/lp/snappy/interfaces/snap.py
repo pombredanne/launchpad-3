@@ -206,8 +206,9 @@ class BadSnapSource(Exception):
 class SnapPrivacyMismatch(Exception):
     """Snap package privacy does not match its content."""
 
-    def __init__(self):
+    def __init__(self, message=None):
         super(SnapPrivacyMismatch, self).__init__(
+            message or
             "Snap contains private information and cannot be public.")
 
 
