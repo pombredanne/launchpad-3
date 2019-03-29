@@ -49,7 +49,6 @@ from lp.app.browser.tales import (
     ArchiveFormatterAPI,
     DateTimeFormatterAPI,
     )
-from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.errors import IncompatibleArguments
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
@@ -82,7 +81,6 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.gitcollection import GenericGitCollection
 from lp.code.model.gitrepository import GitRepository
-from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -1058,11 +1056,11 @@ class SnapSet:
 
         # Public snaps with private sources are not allowed.
         source = branch or git_ref
-        if source.information_type in PRIVATE_INFORMATION_TYPES:
+        if source.private:
             return False
 
         # Public snaps owned by private teams are not allowed.
-        if owner.is_team and owner.visibility == PersonVisibility.PRIVATE:
+        if owner.private:
             return False
 
         return True
