@@ -206,8 +206,9 @@ class BadSnapSource(Exception):
 class SnapPrivacyMismatch(Exception):
     """Snap package privacy does not match its content."""
 
-    def __init__(self):
+    def __init__(self, message=None):
         super(SnapPrivacyMismatch, self).__init__(
+            message or
             "Snap contains private information and cannot be public.")
 
 
@@ -690,11 +691,8 @@ class ISnapEditableAttributes(IHasOwner):
             "snapcraft.yaml, or .snapcraft.yaml recipe at the top level."))
     _api_git_path = exported(
         TextLine(
-            title=_("Git branch path"), required=False, readonly=False,
-            description=_(
-                "The path of the Git branch containing a snap/snapcraft.yaml, "
-                "snapcraft.yaml, or .snapcraft.yaml recipe at the top "
-                "level.")),
+            title=git_path.title, required=False, readonly=False,
+            description=git_path.description),
         exported_as="git_path")
 
     git_ref = exported(Reference(
