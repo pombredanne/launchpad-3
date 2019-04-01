@@ -1,13 +1,16 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.bugs.model.Bug."""
 
 __metaclass__ = type
 
+from datetime import timedelta
+
 from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.management import checkPermission
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.enums import BugNotificationLevel
@@ -23,8 +26,10 @@ from lp.bugs.interfaces.bugtask import (
     UserCannotEditBugTaskImportance,
     UserCannotEditBugTaskMilestone,
     )
+from lp.registry.tests.test_person import KarmaTestMixin
 from lp.testing import (
     admin_logged_in,
+    celebrity_logged_in,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -327,3 +332,83 @@ class TestBugCreation(TestCaseWithFactory):
         target = self.factory.makeProduct()
         bug = self.createBug(owner=person, target=target)
         self.assertContentEqual([person], bug.getDirectSubscribers())
+
+
+class TestBugPermissions(TestCaseWithFactory, KarmaTestMixin):
+    """Test bug permissions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugPermissions, self).setUp()
+        self.pushConfig(
+            'launchpad', min_legitimate_karma=5, min_legitimate_account_age=5)
+        self.bug = self.factory.makeBug()
+
+    def test_unauthenticated_user_cannot_edit(self):
+        self.assertFalse(checkPermission('launchpad.Edit', self.bug))
+
+    def test_new_user_cannot_edit(self):
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(checkPermission('launchpad.Edit', self.bug))
+
+    def test_private_bug_subscriber_can_edit(self):
+        person = self.factory.makePerson()
+        with admin_logged_in() as admin:
+            self.bug.setPrivate(True, admin)
+            self.bug.subscribe(person, admin)
+        with person_logged_in(person):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_private_bug_non_subscriber_cannot_edit(self):
+        with admin_logged_in() as admin:
+            self.bug.setPrivate(True, admin)
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(checkPermission('launchpad.Edit', self.bug))
+
+    def test_user_with_karma_can_edit(self):
+        person = self.factory.makePerson()
+        self._makeKarmaTotalCache(person, 10)
+        with person_logged_in(person):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_user_with_account_age_can_edit(self):
+        person = self.factory.makePerson()
+        naked_account = removeSecurityProxy(person.account)
+        naked_account.date_created = (
+            naked_account.date_created - timedelta(days=10))
+        with person_logged_in(person):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_bug_reporter_can_edit(self):
+        with person_logged_in(self.bug.owner):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_admin_can_edit(self):
+        with admin_logged_in():
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_commercial_admin_can_edit(self):
+        with celebrity_logged_in('commercial_admin'):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_registry_expert_can_edit(self):
+        with celebrity_logged_in('registry_experts'):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_target_owner_can_edit(self):
+        with person_logged_in(self.bug.default_bugtask.target.owner):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_target_driver_can_edit(self):
+        person = self.factory.makePerson()
+        removeSecurityProxy(self.bug.default_bugtask.target).driver = person
+        with person_logged_in(person):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
+
+    def test_target_bug_supervisor_can_edit(self):
+        person = self.factory.makePerson()
+        removeSecurityProxy(self.bug.default_bugtask.target).bug_supervisor = (
+            person)
+        with person_logged_in(person):
+            self.assertTrue(checkPermission('launchpad.Edit', self.bug))
