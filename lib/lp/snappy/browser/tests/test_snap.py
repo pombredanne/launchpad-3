@@ -865,7 +865,7 @@ class TestSnapEditView(BaseTestSnapView):
         browser.getControl("Git branch").value = private_ref_path
         browser.getControl("Update snap package").click()
         self.assertEqual(
-            "A public snap cannot have a private branch.",
+            "A public snap cannot have a private repository.",
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
     def test_edit_snap_git_url(self):

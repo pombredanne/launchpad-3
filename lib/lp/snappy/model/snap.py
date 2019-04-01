@@ -81,9 +81,11 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
 from lp.code.model.gitcollection import GenericGitCollection
 from lp.code.model.gitrepository import GitRepository
+from lp.registry.errors import PrivatePersonLinkageError
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
+    validate_public_person,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
@@ -259,8 +261,17 @@ class Snap(Storm, WebhookTargetMixin):
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
 
-    owner_id = Int(name='owner', allow_none=False)
-    _owner = Reference(owner_id, 'Person.id')
+    def _validate_owner(self, attr, value):
+        if not self.private:
+            try:
+                validate_public_person(self, attr, value)
+            except PrivatePersonLinkageError:
+                raise SnapPrivacyMismatch(
+                    "A public snap cannot have a private owner.")
+        return value
+
+    owner_id = Int(name='owner', allow_none=False, validator=_validate_owner)
+    owner = Reference(owner_id, 'Person.id')
 
     distro_series_id = Int(name='distro_series', allow_none=True)
     distro_series = Reference(distro_series_id, 'DistroSeries.id')
@@ -269,10 +280,26 @@ class Snap(Storm, WebhookTargetMixin):
 
     description = Unicode(name='description', allow_none=True)
 
-    branch_id = Int(name='branch', allow_none=True)
-    _branch = Reference(branch_id, 'Branch.id')
+    def _validate_branch(self, attr, value):
+        if not self.private and value is not None:
+            if IStore(Branch).get(Branch, value).private:
+                raise SnapPrivacyMismatch(
+                    "A public snap cannot have a private branch.")
+        return value
 
-    git_repository_id = Int(name='git_repository', allow_none=True)
+    branch_id = Int(name='branch', allow_none=True, validator=_validate_branch)
+    branch = Reference(branch_id, 'Branch.id')
+
+    def _validate_git_repository(self, attr, value):
+        if not self.private and value is not None:
+            if IStore(GitRepository).get(GitRepository, value).private:
+                raise SnapPrivacyMismatch(
+                    "A public snap cannot have a private repository.")
+        return value
+
+    git_repository_id = Int(
+        name='git_repository', allow_none=True,
+        validator=_validate_git_repository)
     git_repository = Reference(git_repository_id, 'GitRepository.id')
 
     git_repository_url = Unicode(name='git_repository_url', allow_none=True)
@@ -292,7 +319,13 @@ class Snap(Storm, WebhookTargetMixin):
 
     require_virtualized = Bool(name='require_virtualized')
 
-    _private = Bool(name='private')
+    def _validate_private(self, attr, value):
+        if not getUtility(ISnapSet).isValidPrivacy(
+                value, self.owner, self.branch, self.git_ref):
+            raise SnapPrivacyMismatch
+        return value
+
+    private = Bool(name='private', validator=_validate_private)
 
     allow_internet = Bool(name='allow_internet', allow_none=False)
 
@@ -320,7 +353,7 @@ class Snap(Storm, WebhookTargetMixin):
         """Construct a `Snap`."""
         super(Snap, self).__init__()
 
-        # Set the private flag first so that other accessors can perform
+        # Set the private flag first so that other validators can perform
         # suitable privacy checks.
         self.private = private
 
@@ -354,29 +387,6 @@ class Snap(Storm, WebhookTargetMixin):
         return ["snap:build:0.1"]
 
     @property
-    def owner(self):
-        return self._owner
-
-    @owner.setter
-    def owner(self, value):
-        # Public snaps may not be owned by private teams.
-        if not self.private and value is not None and value.private:
-            raise SnapPrivacyMismatch(
-                "A public snap cannot have a private owner.")
-        self._owner = value
-
-    @property
-    def branch(self):
-        return self._branch
-
-    @branch.setter
-    def branch(self, value):
-        if not self.private and value is not None and value.private:
-            raise SnapPrivacyMismatch(
-                "A public snap cannot have a private branch.")
-        self._branch = value
-
-    @property
     def _api_git_path(self):
         return self.git_path
 
@@ -404,9 +414,6 @@ class Snap(Storm, WebhookTargetMixin):
     def git_ref(self, value):
         """See `ISnap`."""
         if value is not None:
-            if not self.private and value.private:
-                raise SnapPrivacyMismatch(
-                    "A public snap cannot have a private branch.")
             self.git_repository = value.repository
             self.git_repository_url = value.repository_url
             self.git_path = value.path
@@ -423,17 +430,6 @@ class Snap(Storm, WebhookTargetMixin):
             return self.git_ref
         else:
             return None
-
-    @property
-    def private(self):
-        return self._private
-
-    @private.setter
-    def private(self, value):
-        if not getUtility(ISnapSet).isValidPrivacy(
-                value, self.owner, self.branch, self.git_ref):
-            raise SnapPrivacyMismatch
-        self._private = value
 
     @property
     def available_processors(self):
@@ -1061,9 +1057,11 @@ class SnapSet:
         if self.exists(owner, name):
             raise DuplicateSnapName
 
-        # The relevant accessors will do their own checks as well, but we do
-        # a single up-front check here in order to avoid an IntegrityError
-        # due to exceptions being raised during object creation.
+        # The relevant validators will do their own checks as well, but we
+        # do a single up-front check here in order to avoid an
+        # IntegrityError due to exceptions being raised during object
+        # creation and to ensure that everything relevant is in the Storm
+        # cache.
         if not self.isValidPrivacy(private, owner, branch, git_ref):
             raise SnapPrivacyMismatch
 
@@ -1111,7 +1109,7 @@ class SnapSet:
 
     def _getByName(self, owner, name):
         return IStore(Snap).find(
-            Snap, Snap._owner == owner, Snap.name == name).one()
+            Snap, Snap.owner == owner, Snap.name == name).one()
 
     def exists(self, owner, name):
         """See `ISnapSet`."""
@@ -1133,12 +1131,12 @@ class SnapSet:
             ids = collection.getRepositoryIds()
         expressions = [id_column.is_in(ids._get_select())]
         if owner is not None:
-            expressions.append(Snap._owner == owner)
+            expressions.append(Snap.owner == owner)
         return IStore(Snap).find(Snap, *expressions)
 
     def findByOwner(self, owner):
         """See `ISnapSet`."""
-        return IStore(Snap).find(Snap, Snap._owner == owner)
+        return IStore(Snap).find(Snap, Snap.owner == owner)
 
     def findByPerson(self, person, visible_by_user=None):
         """See `ISnapSet`."""
@@ -1153,7 +1151,7 @@ class SnapSet:
         git_collection = removeSecurityProxy(getUtility(IAllGitRepositories))
         git_snaps = _getSnaps(git_collection)
         git_url_snaps = IStore(Snap).find(
-            Snap, Snap._owner == person, Snap.git_repository_url != None)
+            Snap, Snap.owner == person, Snap.git_repository_url != None)
         return bzr_snaps.union(git_snaps).union(git_url_snaps)
 
     def findByProject(self, project, visible_by_user=None):
@@ -1168,7 +1166,7 @@ class SnapSet:
 
     def findByBranch(self, branch):
         """See `ISnapSet`."""
-        return IStore(Snap).find(Snap, Snap._branch == branch)
+        return IStore(Snap).find(Snap, Snap.branch == branch)
 
     def findByGitRepository(self, repository, paths=None):
         """See `ISnapSet`."""
@@ -1210,14 +1208,14 @@ class SnapSet:
         # don't yet have the access grant infrastructure to do better, and
         # in any case the numbers involved should be very small.
         if visible_by_user is None:
-            return Snap._private == False
+            return Snap.private == False
         else:
             roles = IPersonRoles(visible_by_user)
             if roles.in_admin or roles.in_commercial_admin:
                 return True
             else:
                 return Or(
-                    Snap._private == False,
+                    Snap.private == False,
                     Snap.owner_id.is_in(Select(
                         TeamParticipation.teamID,
                         TeamParticipation.person == visible_by_user)))
@@ -1226,7 +1224,7 @@ class SnapSet:
         """See `ISnapSet`."""
         clauses = [Snap.git_repository_url == url]
         if owner is not None:
-            clauses.append(Snap._owner == owner)
+            clauses.append(Snap.owner == owner)
         clauses.append(self._findByURLVisibilityClause(visible_by_user))
         return IStore(Snap).find(Snap, *clauses)
 
@@ -1243,7 +1241,7 @@ class SnapSet:
             for url_prefix in url_prefixes]
         clauses = [Or(*prefix_clauses)]
         if owner is not None:
-            clauses.append(Snap._owner == owner)
+            clauses.append(Snap.owner == owner)
         clauses.append(self._findByURLVisibilityClause(visible_by_user))
         return IStore(Snap).find(Snap, *clauses)
 

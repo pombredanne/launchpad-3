@@ -2449,7 +2449,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             json.dumps({"git_ref_link": private_ref_url}))
         self.assertEqual(400, response.status)
         self.assertEqual(
-            "A public snap cannot have a private branch.", response.body)
+            "A public snap cannot have a private repository.", response.body)
 
     def test_cannot_set_git_path_for_bzr(self):
         # Setting git_path on a Bazaar-based Snap fails.

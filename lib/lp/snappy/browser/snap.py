@@ -655,7 +655,7 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
                 if ref is not None and ref.private:
                     self.setFieldError(
                         'private' if 'private' in data else 'git_ref',
-                        u'A public snap cannot have a private branch.')
+                        u'A public snap cannot have a private repository.')
 
     def _needStoreReauth(self, data):
         """Does this change require reauthorizing to the store?"""
