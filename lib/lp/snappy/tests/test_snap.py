@@ -2376,6 +2376,81 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(
             "Test Person is not a member of Other Team.", response.body)
 
+    def test_cannot_make_snap_with_private_components_public(self):
+        # If a Snap has private components, then trying to make it public
+        # fails.
+        branch = self.factory.makeAnyBranch(
+            owner=self.person,
+            information_type=InformationType.PRIVATESECURITY)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, branch=branch,
+            private=True)
+        admin = getUtility(ILaunchpadCelebrities).admin.teamowner
+        with person_logged_in(self.person):
+            snap_url = api_url(snap)
+        logout()
+        admin_webservice = webservice_for_person(
+            admin, permission=OAuthPermission.WRITE_PRIVATE)
+        admin_webservice.default_api_version = "devel"
+        response = admin_webservice.patch(
+            snap_url, "application/json", json.dumps({"private": False}))
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "Snap contains private information and cannot be public.",
+            response.body)
+
+    def test_cannot_set_private_components_of_public_snap(self):
+        # If a Snap is public, then trying to change any of its owner,
+        # branch, or git_repository components to be private fails.
+        bzr_snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            branch=self.factory.makeAnyBranch())
+        git_snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person,
+            git_ref=self.factory.makeGitRefs()[0])
+        private_team = self.factory.makeTeam(
+            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        private_branch = self.factory.makeAnyBranch(
+            owner=self.person,
+            information_type=InformationType.PRIVATESECURITY)
+        [private_ref] = self.factory.makeGitRefs(
+            owner=self.person,
+            information_type=InformationType.PRIVATESECURITY)
+        bzr_snap_url = api_url(bzr_snap)
+        git_snap_url = api_url(git_snap)
+        with person_logged_in(self.person):
+            private_team_url = api_url(private_team)
+            private_branch_url = api_url(private_branch)
+            private_ref_url = api_url(private_ref)
+        logout()
+        private_webservice = webservice_for_person(
+            self.person, permission=OAuthPermission.WRITE_PRIVATE)
+        private_webservice.default_api_version = "devel"
+        response = private_webservice.patch(
+            bzr_snap_url, "application/json",
+            json.dumps({"owner_link": private_team_url}))
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "A public snap cannot have a private owner.", response.body)
+        response = private_webservice.patch(
+            bzr_snap_url, "application/json",
+            json.dumps({"branch_link": private_branch_url}))
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "A public snap cannot have a private branch.", response.body)
+        response = private_webservice.patch(
+            git_snap_url, "application/json",
+            json.dumps({"owner_link": private_team_url}))
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "A public snap cannot have a private owner.", response.body)
+        response = private_webservice.patch(
+            git_snap_url, "application/json",
+            json.dumps({"git_ref_link": private_ref_url}))
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "A public snap cannot have a private repository.", response.body)
+
     def test_cannot_set_git_path_for_bzr(self):
         # Setting git_path on a Bazaar-based Snap fails.
         snap = self.makeSnap(branch=self.factory.makeAnyBranch())

@@ -288,6 +288,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         if (verify_policy
             and information_type not in self.getAllowedInformationTypes(who)):
             raise CannotChangeInformationType("Forbidden by project policy.")
+        # XXX cjwatson 2019-03-29: Check privacy rules on snaps that use
+        # this branch.
         self.information_type = information_type
         self._reconcileAccess()
         if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:

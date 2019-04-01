@@ -791,6 +791,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         if (verify_policy and
             information_type not in self.getAllowedInformationTypes(user)):
             raise CannotChangeInformationType("Forbidden by project policy.")
+        # XXX cjwatson 2019-03-29: Check privacy rules on snaps that use
+        # this repository.
         self.information_type = information_type
         self._reconcileAccess()
         if (information_type in PRIVATE_INFORMATION_TYPES and
