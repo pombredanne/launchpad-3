@@ -866,9 +866,11 @@ class IGitRepositoryEdit(IWebhookTarget):
         merge proposals.
         """
 
-    def getDeletionRequirements():
+    def getDeletionRequirements(eager_load=False):
         """Determine what is required to delete this branch.
 
+        :param eager_load: If True, preload related information needed to
+            display the deletion requirements.
         :return: a dict of {object: (operation, reason)}, where object is the
             object that must be deleted or altered, operation is either
             "delete" or "alter", and reason is a string explaining why the
