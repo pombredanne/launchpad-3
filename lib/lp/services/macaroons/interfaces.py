@@ -41,5 +41,6 @@ class IMacaroonIssuer(IMacaroonIssuerPublic):
 
         :param context: The context that the returned macaroon should relate
             to.
+        :raises ValueError: if the context is unsuitable.
         :return: A macaroon.
         """

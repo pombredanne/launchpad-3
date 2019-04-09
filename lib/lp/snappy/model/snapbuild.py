@@ -595,8 +595,8 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
 
     identifier = "snap-build"
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`.
+    def checkIssuingContext(self, context):
+        """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `ISnapBuild` or its ID.
         """
@@ -608,8 +608,13 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
             raise ValueError("Cannot handle context %r." % context)
         if not removeSecurityProxy(context).is_private:
             raise ValueError("Refusing to issue macaroon for public build.")
-        return super(SnapBuildMacaroonIssuer, self).issueMacaroon(
-            removeSecurityProxy(context).id)
+        return removeSecurityProxy(context).id
+
+    def checkVerificationContext(self, context):
+        """See `MacaroonIssuerBase`."""
+        if not IGitRepository.providedBy(context):
+            raise ValueError("Cannot handle context %r." % context)
+        return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`.
@@ -632,10 +637,3 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
             SnapBuild.snap_id == Snap.id,
             Snap.git_repository == context,
             SnapBuild.status == BuildStatus.BUILDING).is_empty()
-
-    def verifyMacaroon(self, macaroon, context):
-        """See `IMacaroonIssuer`."""
-        if not IGitRepository.providedBy(context):
-            return False
-        return super(SnapBuildMacaroonIssuer, self).verifyMacaroon(
-            macaroon, context)

@@ -1374,15 +1374,20 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
 
     identifier = "binary-package-build"
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`.
+    def checkIssuingContext(self, context):
+        """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `IBinaryPackageBuild`.
         """
         if not removeSecurityProxy(context).archive.private:
             raise ValueError("Refusing to issue macaroon for public build.")
-        return super(BinaryPackageBuildMacaroonIssuer, self).issueMacaroon(
-            removeSecurityProxy(context).id)
+        return removeSecurityProxy(context).id
+
+    def checkVerificationContext(self, context):
+        """See `MacaroonIssuerBase`."""
+        if not isinstance(context, int):
+            raise ValueError("Cannot handle context %r." % context)
+        return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`.
@@ -1408,10 +1413,3 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
                 SourcePackageRelease.id,
             SourcePackageReleaseFile.libraryfileID == context,
             BinaryPackageBuild.status == BuildStatus.BUILDING).is_empty()
-
-    def verifyMacaroon(self, macaroon, context):
-        """See `IMacaroonIssuer`."""
-        if not isinstance(context, int):
-            return False
-        return super(BinaryPackageBuildMacaroonIssuer, self).verifyMacaroon(
-            macaroon, context)

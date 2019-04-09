@@ -39,12 +39,27 @@ class MacaroonIssuerBase:
                 "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
+    def checkIssuingContext(self, context):
+        """Check that the issuing context is suitable.
+
+        Concrete implementations may implement this method to check that the
+        context of a macaroon issuance is suitable.  The returned
+        context is passed to individual caveat checkers, and may be the same
+        context that was passed in or an adapted one.
+
+        :param context: The context to check.
+        :raises ValueError: if the context is unsuitable.
+        :return: The context to pass to individual caveat checkers.
+        """
+        return context
+
     def issueMacaroon(self, context):
         """See `IMacaroonIssuer`.
 
         Concrete implementations should normally wrap this with some
         additional checks of and/or changes to the context.
         """
+        context = self.checkIssuingContext(context)
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname,
             identifier=self.identifier, key=self._root_secret)
@@ -65,6 +80,20 @@ class MacaroonIssuerBase:
         except Exception:
             return False
 
+    def checkVerificationContext(self, context):
+        """Check that the verification context is suitable.
+
+        Concrete implementations may implement this method to check that the
+        context of a macaroon verification is suitable.  The returned
+        context is passed to individual caveat checkers, and may be the same
+        context that was passed in or an adapted one.
+
+        :param context: The context to check.
+        :raises ValueError: if the context is unsuitable.
+        :return: The context to pass to individual caveat checkers.
+        """
+        return context
+
     def verifyPrimaryCaveat(self, caveat_value, context):
         """Verify the primary context caveat on one of this issuer's macaroons.
 
@@ -76,13 +105,12 @@ class MacaroonIssuerBase:
         raise NotImplementedError
 
     def verifyMacaroon(self, macaroon, context):
-        """See `IMacaroonIssuer`.
-
-        Concrete implementations should normally wrap this with some
-        additional checks of the context, and must implement
-        `verifyPrimaryCaveat`.
-        """
+        """See `IMacaroonIssuer`."""
         if not self.checkMacaroonIssuer(macaroon):
+            return False
+        try:
+            context = self.checkVerificationContext(context)
+        except ValueError:
             return False
 
         def verify(caveat):

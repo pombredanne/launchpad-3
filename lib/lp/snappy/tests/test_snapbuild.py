@@ -864,6 +864,17 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
             location=config.vhost.mainsite.hostname, key="another-secret")
         self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
 
+    def test_verifyMacaroon_refuses_branch(self):
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(branch=branch, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(build)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, branch))
+
     def test_verifyMacaroon_not_building(self):
         [ref] = self.factory.makeGitRefs(
             information_type=InformationType.USERDATA)

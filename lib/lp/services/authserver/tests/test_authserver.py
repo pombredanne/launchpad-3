@@ -76,11 +76,11 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
     identifier = 'test'
     _root_secret = 'test'
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`."""
+    def checkIssuingContext(self, context):
+        """See `MacaroonIssuerBase`."""
         if not isinstance(context, int):
-            raise ValueError
-        return super(DummyMacaroonIssuer, self).issueMacaroon(context)
+            raise ValueError("Cannot handle context %r." % context)
+        return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`."""

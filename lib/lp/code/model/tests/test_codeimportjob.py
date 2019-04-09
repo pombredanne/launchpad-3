@@ -1285,7 +1285,7 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         job = self.makeJob(target_rcs_type=TargetRevisionControlSystems.BZR)
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         self.assertRaises(
-            AssertionError, removeSecurityProxy(issuer).issueMacaroon, job)
+            ValueError, removeSecurityProxy(issuer).issueMacaroon, job)
 
     def test_issueMacaroon_good(self):
         job = self.makeJob()
