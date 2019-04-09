@@ -947,26 +947,6 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
             faults.PermissionDenied(),
             authserver.issueMacaroon("binary-package-build", build))
 
-    def test_checkMacaroonIssuer_good(self):
-        build = self.factory.makeBinaryPackageBuild(
-            archive=self.factory.makeArchive(private=True))
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
-        self.assertTrue(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_location(self):
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = Macaroon(
-            location="another-location",
-            key=removeSecurityProxy(issuer)._root_secret)
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_key(self):
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = Macaroon(
-            location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
-
     def test_verifyMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(
             archive=self.factory.makeArchive(private=True))

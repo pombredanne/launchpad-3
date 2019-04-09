@@ -82,15 +82,15 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
     issuable_via_authserver = True
     _root_secret = 'test'
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`."""
-        if not isinstance(context, int):
-            raise ValueError
-        return super(DummyMacaroonIssuer, self).issueMacaroon(context)
-
-    def verifyCaveat(self, caveat_text, context):
+    def checkIssuingContext(self, context):
         """See `MacaroonIssuerBase`."""
-        return caveat_text == str(context)
+        if not isinstance(context, int):
+            raise ValueError("Cannot handle context %r." % context)
+        return context
+
+    def verifyPrimaryCaveat(self, caveat_value, context):
+        """See `MacaroonIssuerBase`."""
+        return caveat_value == str(context)
 
 
 class MacaroonTests(TestCase):

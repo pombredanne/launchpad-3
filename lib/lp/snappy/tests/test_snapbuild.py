@@ -827,26 +827,6 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
                     caveat_id="lp.snap-build %s" % build.id),
                 ])))
 
-    def test_checkMacaroonIssuer_good(self):
-        build = self.factory.makeSnapBuild(
-            snap=self.factory.makeSnap(private=True))
-        issuer = getUtility(IMacaroonIssuer, "snap-build")
-        macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
-        self.assertTrue(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_location(self):
-        issuer = getUtility(IMacaroonIssuer, "snap-build")
-        macaroon = Macaroon(
-            location="another-location",
-            key=removeSecurityProxy(issuer)._root_secret)
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_key(self):
-        issuer = getUtility(IMacaroonIssuer, "snap-build")
-        macaroon = Macaroon(
-            location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
-
     def test_verifyMacaroon_good(self):
         [ref] = self.factory.makeGitRefs(
             information_type=InformationType.USERDATA)
@@ -881,6 +861,17 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
         self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+
+    def test_verifyMacaroon_refuses_branch(self):
+        branch = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(branch=branch, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(build)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, branch))
 
     def test_verifyMacaroon_not_building(self):
         [ref] = self.factory.makeGitRefs(
