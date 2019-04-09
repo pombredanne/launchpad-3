@@ -437,4 +437,8 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
 
     def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`."""
+        if context is None:
+            # We're only verifying that the macaroon could be valid for some
+            # context.
+            return True
         return caveat_value == str(context.id)

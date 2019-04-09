@@ -16,19 +16,16 @@ from zope.interface import Interface
 class IMacaroonIssuerPublic(Interface):
     """Public interface to a policy for verifying macaroons."""
 
-    def checkMacaroonIssuer(macaroon):
-        """Check that `macaroon` was issued by this issuer.
-
-        This does not verify that the macaroon is valid for a given context,
-        only that it could be valid for some context.  Use this in the
-        authentication part of an authentication/authorisation API.
-        """
-
-    def verifyMacaroon(macaroon, context):
+    def verifyMacaroon(macaroon, context, require_context=True):
         """Verify that `macaroon` is valid for `context`.
 
         :param macaroon: A `Macaroon`.
         :param context: The context to check.
+        :param require_context: If True (the default), fail verification if
+            the context is None.  If False and the context is None, only
+            verify that the macaroon could be valid for some context.  Use
+            this in the authentication part of an
+            authentication/authorisation API.
         :return: True if `macaroon` is valid for `context`, otherwise False.
         """
 

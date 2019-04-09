@@ -104,14 +104,17 @@ class MacaroonIssuerBase:
         """
         raise NotImplementedError
 
-    def verifyMacaroon(self, macaroon, context):
+    def verifyMacaroon(self, macaroon, context, require_context=True):
         """See `IMacaroonIssuer`."""
-        if not self.checkMacaroonIssuer(macaroon):
+        if macaroon.location != config.vhost.mainsite.hostname:
             return False
-        try:
-            context = self.checkVerificationContext(context)
-        except ValueError:
+        if require_context and context is None:
             return False
+        if context is not None:
+            try:
+                context = self.checkVerificationContext(context)
+            except ValueError:
+                return False
 
         def verify(caveat):
             try:
