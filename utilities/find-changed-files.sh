@@ -11,12 +11,7 @@ set -o pipefail
 
 if [ -d .git ]; then
     git_diff_files() {
-        git diff --numstat -z $@ | perl -l -0 -ne '
-            # Remove leading added/deleted line counts.
-            s/^[0-9]+\t[0-9]+\t//;
-            # If this entry shows a rename or a copy, then extract the
-            # destination path.
-            if (/^$/) { <>; $_ = <>; chomp }
+        git diff --name-only -z $@ | perl -l -0 -ne '
             # Only show paths that exist and are not symlinks.
             print if -e and not -l'
     }
