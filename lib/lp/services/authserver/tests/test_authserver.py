@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -82,9 +82,9 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
             raise ValueError
         return super(DummyMacaroonIssuer, self).issueMacaroon(context)
 
-    def verifyCaveat(self, caveat_text, context):
+    def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`."""
-        return caveat_text == str(context)
+        return caveat_value == str(context)
 
 
 class VerifyMacaroonTests(TestCase):

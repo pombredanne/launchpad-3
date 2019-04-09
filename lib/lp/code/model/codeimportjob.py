@@ -428,9 +428,9 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
         return super(CodeImportJobMacaroonIssuer, self).issueMacaroon(
             context.id)
 
-    def verifyCaveat(self, caveat_text, context):
+    def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`."""
-        return caveat_text == str(context.id)
+        return caveat_value == str(context.id)
 
     def verifyMacaroon(self, macaroon, context):
         """See `IMacaroonIssuer`."""

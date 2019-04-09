@@ -1384,7 +1384,7 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
         return super(BinaryPackageBuildMacaroonIssuer, self).issueMacaroon(
             removeSecurityProxy(context).id)
 
-    def verifyCaveat(self, caveat_text, context):
+    def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`.
 
         For verification, the context is a `LibraryFileAlias` ID.  We check
@@ -1396,7 +1396,7 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         try:
-            build_id = int(caveat_text)
+            build_id = int(caveat_value)
         except ValueError:
             return False
         return not IStore(BinaryPackageBuild).find(

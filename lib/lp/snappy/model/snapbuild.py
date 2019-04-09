@@ -611,7 +611,7 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
         return super(SnapBuildMacaroonIssuer, self).issueMacaroon(
             removeSecurityProxy(context).id)
 
-    def verifyCaveat(self, caveat_text, context):
+    def verifyPrimaryCaveat(self, caveat_value, context):
         """See `MacaroonIssuerBase`.
 
         For verification, the context is an `IGitRepository`.  We check that
@@ -623,7 +623,7 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
         from lp.snappy.model.snap import Snap
 
         try:
-            build_id = int(caveat_text)
+            build_id = int(caveat_value)
         except ValueError:
             return False
         return not IStore(SnapBuild).find(
