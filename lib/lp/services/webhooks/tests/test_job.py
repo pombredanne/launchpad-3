@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `WebhookJob`s."""
@@ -366,10 +366,11 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             job,
             MatchesStructure(
                 status=Equals(JobStatus.COMPLETED),
-                pending=Equals(False),
-                successful=Equals(True),
+                pending=Is(False),
+                successful=Is(True),
                 date_sent=Not(Is(None)),
                 error_message=Is(None),
+                should_retry=Is(False),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -406,24 +407,48 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([], oopses.oopses)
 
     def test_run_404(self):
-        # A request that returns a non-2xx response is a failure and
-        # gets retried.
+        # A request that returns a non-2xx/5xx response is a failure and
+        # does not get retried.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(response_status=404)
         self.assertThat(
             job,
             MatchesStructure(
-                status=Equals(JobStatus.WAITING),
-                pending=Equals(True),
-                successful=Equals(False),
+                status=Equals(JobStatus.FAILED),
+                pending=Is(False),
+                successful=Is(False),
                 date_sent=Not(Is(None)),
                 error_message=Equals('Bad HTTP response: 404'),
+                should_retry=Is(False),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
                         ContainsDict(
                             {'response': ContainsDict(
                                 {'status_code': Equals(404)})}))})))
+        self.assertEqual(1, len(reqs))
+        self.assertEqual([], oopses.oopses)
+
+    def test_run_503(self):
+        # A request that returns a 5xx response is a failure and gets
+        # retried.
+        with CaptureOops() as oopses:
+            job, reqs = self.makeAndRunJob(response_status=503)
+        self.assertThat(
+            job,
+            MatchesStructure(
+                status=Equals(JobStatus.WAITING),
+                pending=Is(True),
+                successful=Is(False),
+                date_sent=Not(Is(None)),
+                error_message=Equals('Bad HTTP response: 503'),
+                should_retry=Is(True),
+                json_data=ContainsDict(
+                    {'result': MatchesAll(
+                        KeysEqual('request', 'response'),
+                        ContainsDict(
+                            {'response': ContainsDict(
+                                {'status_code': Equals(503)})}))})))
         self.assertEqual(1, len(reqs))
         self.assertEqual([], oopses.oopses)
 
@@ -437,10 +462,11 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             job,
             MatchesStructure(
                 status=Equals(JobStatus.WAITING),
-                pending=Equals(True),
-                successful=Equals(False),
+                pending=Is(True),
+                successful=Is(False),
                 date_sent=Not(Is(None)),
                 error_message=Equals('Connection error: Connection refused'),
+                should_retry=Is(True),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'connection_error'),
@@ -462,10 +488,11 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             job,
             MatchesStructure(
                 status=Equals(JobStatus.FAILED),
-                pending=Equals(False),
+                pending=Is(False),
                 successful=Is(None),
                 date_sent=Is(None),
                 error_message=Is(None),
+                should_retry=Is(False),
                 json_data=Not(Contains('result'))))
         self.assertEqual([], reqs)
         self.assertEqual(1, len(oopses.oopses))
@@ -483,18 +510,19 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             job,
             MatchesStructure(
                 status=Equals(JobStatus.FAILED),
-                pending=Equals(False),
-                successful=Equals(False),
+                pending=Is(False),
+                successful=Is(False),
                 date_sent=Is(None),
                 error_message=Equals('Webhook deactivated'),
+                should_retry=Is(False),
                 json_data=ContainsDict(
                     {'result': MatchesDict(
-                        {'webhook_deactivated': Equals(True)})})))
+                        {'webhook_deactivated': Is(True)})})))
         self.assertEqual([], reqs)
         self.assertEqual([], oopses.oopses)
 
     def test_date_first_sent(self):
-        job, reqs = self.makeAndRunJob(response_status=404)
+        job, reqs = self.makeAndRunJob(response_status=503)
         self.assertEqual(job.date_first_sent, job.date_sent)
         orig_first_sent = job.date_first_sent
         self.assertEqual(JobStatus.WAITING, job.status)
@@ -551,7 +579,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
     def test_automatic_retries(self):
         hook = self.factory.makeWebhook()
         job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
-        client = MockWebhookClient(response_status=404)
+        client = MockWebhookClient(response_status=503)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
         # The first attempt fails but schedules a retry five minutes later.
@@ -585,7 +613,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
     def test_manual_retries(self):
         hook = self.factory.makeWebhook()
         job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
-        client = MockWebhookClient(response_status=404)
+        client = MockWebhookClient(response_status=503)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
         # Simulate a first attempt failure.
@@ -633,7 +661,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         # systemic errors that erroneously failed many deliveries.
         hook = self.factory.makeWebhook()
         job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
-        client = MockWebhookClient(response_status=404)
+        client = MockWebhookClient(response_status=503)
         self.useFixture(ZopeUtilityFixture(client, IWebhookClient))
 
         # Simulate a first attempt failure.

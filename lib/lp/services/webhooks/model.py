@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -467,6 +467,17 @@ class WebhookDeliveryJob(WebhookJobDerived):
         self.queue()
 
     @property
+    def should_retry(self):
+        if 'result' not in self.json_data:
+            return False
+        if self.json_data['result'].get('webhook_deactivated'):
+            return False
+        if self.json_data['result'].get('connection_error') is not None:
+            return True
+        status_code = self.json_data['result']['response']['status_code']
+        return 500 <= status_code <= 599
+
+    @property
     def retry_automatically(self):
         return self._time_since_first_attempt < timedelta(days=1)
 
@@ -510,7 +521,7 @@ class WebhookDeliveryJob(WebhookJobDerived):
         transaction.commit()
 
         if not self.successful:
-            if self.retry_automatically:
+            if self.should_retry and self.retry_automatically:
                 raise WebhookDeliveryRetry()
             else:
                 raise WebhookDeliveryFailure(self.error_message)
