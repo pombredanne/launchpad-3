@@ -1370,8 +1370,10 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         self.assertFalse(issuer.verifyMacaroon(macaroon, job))
 
     def test_verifyMacaroon_wrong_job(self):
+        machine = self.factory.makeCodeImportMachine(set_online=True)
         job = self.makeJob()
-        other_job = self.factory.makeCodeImportJob(code_import=job.code_import)
+        other_job = self.makeJob()
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = removeSecurityProxy(issuer).issueMacaroon(other_job)
         self.assertFalse(issuer.verifyMacaroon(macaroon, job))
