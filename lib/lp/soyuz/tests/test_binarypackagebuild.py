@@ -32,6 +32,7 @@ from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
 from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.testing import MacaroonTestMixin
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
@@ -910,7 +911,8 @@ class TestCalculateScore(TestCaseWithFactory):
                 archive, getUtility(ILaunchpadCelebrities).ppa_admin)
 
 
-class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
+class TestBinaryPackageBuildMacaroonIssuer(
+        MacaroonTestMixin, TestCaseWithFactory):
     """Test BinaryPackageBuild macaroon issuing and verification."""
 
     layer = LaunchpadZopelessLayer
@@ -957,7 +959,7 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertTrue(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonVerifies(issuer, macaroon, lfa_id)
 
     def test_verifyMacaroon_wrong_location(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -970,7 +972,9 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = Macaroon(
             location="another-location", key=issuer._root_secret)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Macaroon has unknown location 'another-location'."],
+            issuer, macaroon, lfa_id)
 
     def test_verifyMacaroon_wrong_key(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -983,7 +987,8 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Signatures do not match."], issuer, macaroon, lfa_id)
 
     def test_verifyMacaroon_not_building(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -994,7 +999,10 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.binary-package-build %s' failed." %
+             build.id],
+            issuer, macaroon, lfa_id)
 
     def test_verifyMacaroon_wrong_build(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -1009,7 +1017,10 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(other_build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.binary-package-build %s' failed." %
+             other_build.id],
+            issuer, macaroon, lfa_id)
 
     def test_verifyMacaroon_wrong_file(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -1022,4 +1033,7 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.binary-package-build %s' failed." %
+             build.id],
+            issuer, macaroon, lfa_id)

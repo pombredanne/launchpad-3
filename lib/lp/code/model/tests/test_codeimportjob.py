@@ -62,6 +62,7 @@ from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.testing import MacaroonTestMixin
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -1268,7 +1269,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
             get_feedback_messages(user_browser.contents))
 
 
-class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
+class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
     """Test CodeImportJob macaroon issuing and verification."""
 
     layer = DatabaseFunctionalLayer
@@ -1321,7 +1322,7 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
-        self.assertTrue(issuer.verifyMacaroon(macaroon, job))
+        self.assertMacaroonVerifies(issuer, macaroon, job)
 
     def test_verifyMacaroon_good_no_context(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1329,8 +1330,8 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
-        self.assertTrue(
-            issuer.verifyMacaroon(macaroon, None, require_context=False))
+        self.assertMacaroonVerifies(
+            issuer, macaroon, job, require_context=False)
 
     def test_verifyMacaroon_no_context_but_require_context(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1338,7 +1339,9 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, None))
+        self.assertMacaroonDoesNotVerify(
+            ["Expected macaroon verification context but got None."],
+            issuer, macaroon, None)
 
     def test_verifyMacaroon_wrong_location(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1348,9 +1351,12 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         macaroon = Macaroon(
             location="another-location",
             key=removeSecurityProxy(issuer)._root_secret)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
-        self.assertFalse(
-            issuer.verifyMacaroon(macaroon, None, require_context=False))
+        self.assertMacaroonDoesNotVerify(
+            ["Macaroon has unknown location 'another-location'."],
+            issuer, macaroon, job)
+        self.assertMacaroonDoesNotVerify(
+            ["Macaroon has unknown location 'another-location'."],
+            issuer, macaroon, job, require_context=False)
 
     def test_verifyMacaroon_wrong_key(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1359,15 +1365,19 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
-        self.assertFalse(
-            issuer.verifyMacaroon(macaroon, None, require_context=False))
+        self.assertMacaroonDoesNotVerify(
+            ["Signatures do not match."], issuer, macaroon, job)
+        self.assertMacaroonDoesNotVerify(
+            ["Signatures do not match."],
+            issuer, macaroon, job, require_context=False)
 
     def test_verifyMacaroon_not_running(self):
         job = self.makeJob()
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
+        self.assertMacaroonDoesNotVerify(
+            ["%r is not in the RUNNING state." % job],
+            issuer, macaroon, job)
 
     def test_verifyMacaroon_wrong_job(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1376,4 +1386,7 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = removeSecurityProxy(issuer).issueMacaroon(other_job)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.code-import-job %s' failed." %
+             other_job.id],
+            issuer, macaroon, job)

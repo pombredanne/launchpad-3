@@ -14,8 +14,10 @@ from pymacaroons import (
     Macaroon,
     Verifier,
     )
+from pymacaroons.exceptions import MacaroonVerificationFailedException
 
 from lp.services.config import config
+from lp.services.scripts import log
 
 
 class MacaroonIssuerBase:
@@ -96,19 +98,31 @@ class MacaroonIssuerBase:
     def verifyMacaroon(self, macaroon, context, require_context=True):
         """See `IMacaroonIssuer`."""
         if macaroon.location != config.vhost.mainsite.hostname:
+            log.info("Macaroon has unknown location '%s'." % macaroon.location)
             return False
         if require_context and context is None:
+            log.info("Expected macaroon verification context but got None.")
             return False
         if context is not None:
             try:
                 context = self.checkVerificationContext(context)
-            except ValueError:
+            except ValueError as e:
+                log.info(str(e))
                 return False
+
+        # XXX cjwatson 2019-04-11: Once we're on Python 3, we should use
+        # "nonlocal" instead of this hack.
+        class VerificationState:
+            logged_caveat_error = False
+
+        state = VerificationState()
 
         def verify(caveat):
             try:
                 caveat_name, caveat_value = caveat.split(" ", 1)
             except ValueError:
+                log.info("Cannot parse caveat '%s'." % caveat)
+                state.logged_caveat_error = True
                 return False
             if caveat_name == self.primary_caveat_name:
                 checker = self.verifyPrimaryCaveat
@@ -116,12 +130,23 @@ class MacaroonIssuerBase:
                 # XXX cjwatson 2019-04-09: For now we just fail closed if
                 # there are any other caveats, which is good enough for
                 # internal use.
+                log.info("Unhandled caveat name '%s'." % caveat_name)
+                state.logged_caveat_error = True
                 return False
-            return checker(caveat_value, context)
+            if not checker(caveat_value, context):
+                log.info("Caveat check for '%s' failed." % caveat)
+                state.logged_caveat_error = True
+                return False
+            return True
 
         try:
             verifier = Verifier()
             verifier.satisfy_general(verify)
             return verifier.verify(macaroon, self._root_secret)
+        except MacaroonVerificationFailedException as e:
+            if not state.logged_caveat_error:
+                log.info(str(e))
+            return False
         except Exception:
+            log.exception("Unhandled exception while verifying macaroon.")
             return False

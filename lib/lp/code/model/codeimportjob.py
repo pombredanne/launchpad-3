@@ -430,9 +430,10 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
 
     def checkVerificationContext(self, context):
         """See `MacaroonIssuerBase`."""
-        if (not ICodeImportJob.providedBy(context) or
-                context.state != CodeImportJobState.RUNNING):
-            raise ValueError
+        if not ICodeImportJob.providedBy(context):
+            raise ValueError("Cannot handle context %r." % context)
+        if context.state != CodeImportJobState.RUNNING:
+            raise ValueError("%r is not in the RUNNING state." % context)
         return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):
