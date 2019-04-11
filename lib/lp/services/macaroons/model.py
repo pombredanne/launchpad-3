@@ -69,19 +69,6 @@ class MacaroonIssuerBase:
             "%s %s" % (self.primary_caveat_name, context))
         return macaroon
 
-    def checkMacaroonIssuer(self, macaroon):
-        """See `IMacaroonIssuer`."""
-        if macaroon.location != config.vhost.mainsite.hostname:
-            return False
-        try:
-            verifier = Verifier()
-            verifier.satisfy_general(
-                lambda caveat: caveat.startswith(
-                    self.primary_caveat_name + " "))
-            return verifier.verify(macaroon, self._root_secret)
-        except Exception:
-            return False
-
     def checkVerificationContext(self, context):
         """Check that the verification context is suitable.
 
