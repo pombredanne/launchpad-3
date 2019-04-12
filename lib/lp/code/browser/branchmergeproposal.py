@@ -807,6 +807,33 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             return False
         return latest_preview.job.status == JobStatus.FAILED
 
+    @property
+    def show_rescan_link(self):
+        if self.context.source_branch is not None:
+            # XXX (twom): need bzr branch support
+            return False
+        # git repository handling
+        source_job = self.context.source_git_repository.getLatestScanJob()
+        target_job = self.context.target_git_repository.getLatestScanJob()
+        if source_job and source_job.job.status == JobStatus.FAILED:
+            return True
+        if target_job and target_job.job.status == JobStatus.FAILED:
+            return True
+        return False
+
+    def get_rescan_links(self):
+        if self.context.source_branch is not None:
+            # XXX (twom): need bzr branch support
+            return False
+        repos = []
+        source_job = self.context.source_git_repository.getLatestScanJob()
+        target_job = self.context.target_git_repository.getLatestScanJob()
+        if source_job and source_job.job.status == JobStatus.FAILED:
+            repos.append(self.context.source_git_repository)
+        if target_job and target_job.job.status == JobStatus.FAILED:
+            repos.append(self.context.target_git_repository)
+        return repos
+
 
 @delegate_to(ICodeReviewVoteReference)
 class DecoratedCodeReviewVoteReference:

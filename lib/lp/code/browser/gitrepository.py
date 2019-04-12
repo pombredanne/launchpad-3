@@ -463,7 +463,9 @@ class GitRepositoryRescanView(LaunchpadEditFormView):
     def rescan(self, action, data):
         self.context.rescan()
         self.request.response.addNotification("Repository scan scheduled")
-        self.next_url = canonical_url(self.context)
+        # This can be used by BMP, in which case we want to redirect back
+        # from whence it came.
+        self.next_url = self.request.headers.get('referer')
 
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):

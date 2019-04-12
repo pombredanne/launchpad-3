@@ -208,6 +208,21 @@
         </p>
       </div>
     </div>
+    <div class="yui-g" tal:condition="view/show_rescan_link">
+      <div class="pending-update" id="diff-pending-update">
+        <h3>Update scan failed</h3>
+        <p>At least one of the branches involved have failed to scan. You can manually schedule a rescan if required.</p>
+        <p tal:repeat="repo view/get_rescan_links">
+            <form action="+rescan" tal:attributes="action repo/fmt:url/+rescan"
+                  name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+              <span tal:content="context/fmt:url" />
+              <input id="field.actions.rescan" class="button" type="submit"
+              name="field.actions.rescan" value="Rescan" />
+              <span tal:content="structure repo/fmt:link/+rescan" />
+            </form>
+        </p>
+      </div>
+    </div>
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
 
