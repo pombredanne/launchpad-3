@@ -175,14 +175,9 @@ def main():
         # Resume replication.
         replication_paused = not controller.resume_replication()
         if replication_paused:
-            if master_con.server_version >= 100000:
-                log.error(
-                    "Failed to resume replication. Run pg_wal_replay_pause() "
-                    "on all slaves to manually resume.")
-            else:
-                log.error(
-                    "Failed to resume replication. Run pg_xlog_replay_pause() "
-                    "on all slaves to manually resume.")
+            log.error(
+                "Failed to resume replication. Run pg_wal_replay_pause() "
+                "on all slaves to manually resume.")
         else:
             if controller.sync():
                 log.info('Slaves in sync. Updates replicated.')
