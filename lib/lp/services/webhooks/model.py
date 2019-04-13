@@ -467,19 +467,21 @@ class WebhookDeliveryJob(WebhookJobDerived):
         self.queue()
 
     @property
-    def should_retry(self):
+    def retry_automatically(self):
         if 'result' not in self.json_data:
             return False
-        if self.json_data['result'].get('webhook_deactivated'):
-            return False
         if self.json_data['result'].get('connection_error') is not None:
-            return True
-        status_code = self.json_data['result']['response']['status_code']
-        return 500 <= status_code <= 599
-
-    @property
-    def retry_automatically(self):
-        return self._time_since_first_attempt < timedelta(days=1)
+            duration = timedelta(days=1)
+        else:
+            status_code = self.json_data['result']['response']['status_code']
+            if 500 <= status_code <= 599:
+                duration = timedelta(days=1)
+            else:
+                # Nominally a client error, but let's retry for a little
+                # while anyway since it's quite common for servers to return
+                # such errors for a short time during reconfigurations.
+                duration = timedelta(hours=1)
+        return self._time_since_first_attempt < duration
 
     @property
     def retry_delay(self):
@@ -521,7 +523,7 @@ class WebhookDeliveryJob(WebhookJobDerived):
         transaction.commit()
 
         if not self.successful:
-            if self.should_retry and self.retry_automatically:
+            if self.retry_automatically:
                 raise WebhookDeliveryRetry()
             else:
                 raise WebhookDeliveryFailure(self.error_message)

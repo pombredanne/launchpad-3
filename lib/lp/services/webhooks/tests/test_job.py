@@ -370,7 +370,6 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 successful=Is(True),
                 date_sent=Not(Is(None)),
                 error_message=Is(None),
-                should_retry=Is(False),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
@@ -407,33 +406,10 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([], oopses.oopses)
 
     def test_run_404(self):
-        # A request that returns a non-2xx/5xx response is a failure and
-        # does not get retried.
+        # A request that returns a non-2xx response is a failure and
+        # gets retried.
         with CaptureOops() as oopses:
             job, reqs = self.makeAndRunJob(response_status=404)
-        self.assertThat(
-            job,
-            MatchesStructure(
-                status=Equals(JobStatus.FAILED),
-                pending=Is(False),
-                successful=Is(False),
-                date_sent=Not(Is(None)),
-                error_message=Equals('Bad HTTP response: 404'),
-                should_retry=Is(False),
-                json_data=ContainsDict(
-                    {'result': MatchesAll(
-                        KeysEqual('request', 'response'),
-                        ContainsDict(
-                            {'response': ContainsDict(
-                                {'status_code': Equals(404)})}))})))
-        self.assertEqual(1, len(reqs))
-        self.assertEqual([], oopses.oopses)
-
-    def test_run_503(self):
-        # A request that returns a 5xx response is a failure and gets
-        # retried.
-        with CaptureOops() as oopses:
-            job, reqs = self.makeAndRunJob(response_status=503)
         self.assertThat(
             job,
             MatchesStructure(
@@ -441,14 +417,13 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 pending=Is(True),
                 successful=Is(False),
                 date_sent=Not(Is(None)),
-                error_message=Equals('Bad HTTP response: 503'),
-                should_retry=Is(True),
+                error_message=Equals('Bad HTTP response: 404'),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'response'),
                         ContainsDict(
                             {'response': ContainsDict(
-                                {'status_code': Equals(503)})}))})))
+                                {'status_code': Equals(404)})}))})))
         self.assertEqual(1, len(reqs))
         self.assertEqual([], oopses.oopses)
 
@@ -466,7 +441,6 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 successful=Is(False),
                 date_sent=Not(Is(None)),
                 error_message=Equals('Connection error: Connection refused'),
-                should_retry=Is(True),
                 json_data=ContainsDict(
                     {'result': MatchesAll(
                         KeysEqual('request', 'connection_error'),
@@ -492,7 +466,6 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 successful=Is(None),
                 date_sent=Is(None),
                 error_message=Is(None),
-                should_retry=Is(False),
                 json_data=Not(Contains('result'))))
         self.assertEqual([], reqs)
         self.assertEqual(1, len(oopses.oopses))
@@ -514,7 +487,6 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 successful=Is(False),
                 date_sent=Is(None),
                 error_message=Equals('Webhook deactivated'),
-                should_retry=Is(False),
                 json_data=ContainsDict(
                     {'result': MatchesDict(
                         {'webhook_deactivated': Is(True)})})))
@@ -522,7 +494,7 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         self.assertEqual([], oopses.oopses)
 
     def test_date_first_sent(self):
-        job, reqs = self.makeAndRunJob(response_status=503)
+        job, reqs = self.makeAndRunJob(response_status=404)
         self.assertEqual(job.date_first_sent, job.date_sent)
         orig_first_sent = job.date_first_sent
         self.assertEqual(JobStatus.WAITING, job.status)
@@ -554,13 +526,41 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             job.date_first_sent - timedelta(minutes=30)).isoformat()
         self.assertEqual(timedelta(hours=1), job.retry_delay)
 
-    def test_retry_automatically(self):
-        # Deliveries are automatically retried until 24 hours after the
-        # initial attempt.
-        job, reqs = self.makeAndRunJob(response_status=404)
+    def test_retry_automatically_connection_error(self):
+        # Deliveries that received a connection error are automatically
+        # retried until 24 hours after the initial attempt.
+        job, reqs = self.makeAndRunJob(
+            raises=requests.ConnectionError('Connection refused'))
+        self.assertTrue(job.retry_automatically)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=23)).isoformat()
         self.assertTrue(job.retry_automatically)
         job.json_data['date_first_sent'] = (
             job.date_first_sent - timedelta(hours=24)).isoformat()
+        self.assertFalse(job.retry_automatically)
+
+    def test_retry_automatically_5xx(self):
+        # Deliveries that received a 5xx response are automatically retried
+        # until 24 hours after the initial attempt.
+        job, reqs = self.makeAndRunJob(response_status=503)
+        self.assertTrue(job.retry_automatically)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=23)).isoformat()
+        self.assertTrue(job.retry_automatically)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=24)).isoformat()
+        self.assertFalse(job.retry_automatically)
+
+    def test_retry_automatically_4xx(self):
+        # Deliveries that received a non-2xx/5xx response are automatically
+        # retried until 24 hours after the initial attempt.
+        job, reqs = self.makeAndRunJob(response_status=404)
+        self.assertTrue(job.retry_automatically)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(minutes=59)).isoformat()
+        self.assertTrue(job.retry_automatically)
+        job.json_data['date_first_sent'] = (
+            job.date_first_sent - timedelta(hours=1)).isoformat()
         self.assertFalse(job.retry_automatically)
 
     def runJob(self, job):
