@@ -807,16 +807,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             return False
         return latest_preview.job.status == JobStatus.FAILED
 
-    @property
-    def show_rescan_link(self):
-        source_job = self.context.parent.getLatestScanJob()
-        target_job = self.context.target_branch_or_repo.getLatestScanJob()
-        if source_job and source_job.job.status == JobStatus.FAILED:
-            return True
-        if target_job and target_job.job.status == JobStatus.FAILED:
-            return True
-        return False
-
     def get_rescan_links(self):
         repos = []
         source_job = self.context.parent.getLatestScanJob()
