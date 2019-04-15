@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -468,7 +468,20 @@ class WebhookDeliveryJob(WebhookJobDerived):
 
     @property
     def retry_automatically(self):
-        return self._time_since_first_attempt < timedelta(days=1)
+        if 'result' not in self.json_data:
+            return False
+        if self.json_data['result'].get('connection_error') is not None:
+            duration = timedelta(days=1)
+        else:
+            status_code = self.json_data['result']['response']['status_code']
+            if 500 <= status_code <= 599:
+                duration = timedelta(days=1)
+            else:
+                # Nominally a client error, but let's retry for a little
+                # while anyway since it's quite common for servers to return
+                # such errors for a short time during reconfigurations.
+                duration = timedelta(hours=1)
+        return self._time_since_first_attempt < duration
 
     @property
     def retry_delay(self):
