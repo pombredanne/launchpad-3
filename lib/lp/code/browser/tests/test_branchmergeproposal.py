@@ -51,6 +51,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.code.model.branchjob import BranchScanJob
 from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView,
@@ -76,6 +77,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
 from lp.code.model.diff import PreviewDiff
+from lp.code.model.gitjob import GitRefScanJob
 from lp.code.tests.helpers import (
     add_revision_to_branch,
     GitHostingFixture,
@@ -2176,6 +2178,33 @@ class TestBranchMergeProposal(BrowserTestCase):
         view = create_initialized_view(bmp, '+index')
         result = view.show_diff_update_link
         self.assertTrue(result)
+
+    def test_get_rescan_links_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = GitRefScanJob.create(bmp.target_git_repository)
+        target_job.job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        result = view.get_rescan_links()
+        self.assertEqual([bmp.target_git_repository], result)
+
+    def test_get_rescan_links_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        target_job = BranchScanJob.create(bmp.target_branch)
+        target_job.job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        result = view.get_rescan_links()
+        self.assertEqual([bmp.target_branch], result)
+
+    def test_get_rescan_links_both_failed(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = GitRefScanJob.create(bmp.target_git_repository)
+        target_job.job._status = JobStatus.FAILED
+        source_job = GitRefScanJob.create(bmp.source_git_repository)
+        source_job.job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        result = view.get_rescan_links()
+        self.assertEqual(
+            [bmp.source_git_repository, bmp.target_git_repository], result)
 
 
 class TestLatestProposalsForEachBranchMixin:
