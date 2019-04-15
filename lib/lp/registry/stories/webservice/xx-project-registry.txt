@@ -790,7 +790,7 @@ method simplifies this for us.
     Elmer
 
     >>> print milestone['date_targeted']
-    2005-06-06T00:00:00
+    2005-06-06
 
     >>> print milestone['summary']
     Feature complete but buggy.
@@ -916,7 +916,7 @@ virtual host.
     ...     '/firefox/+milestone/1.0').jsonBody()
     >>> pprint_entry(firefox_milestone_1_0)
     code_name: None
-    date_targeted: u'2056-10-16T18:31:44.293448'
+    date_targeted: u'2056-10-16'
     is_active: True
     name: u'1.0'
     official_bug_tags: []
