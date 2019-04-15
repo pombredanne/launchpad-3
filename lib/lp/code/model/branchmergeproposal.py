@@ -315,6 +315,13 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         else:
             return self.source_git_repository
 
+    @property
+    def target_branch_or_repo(self):
+        if self.target_branch is not None:
+            return self.target_branch
+        else:
+            return self.target_git_repository
+
     description = StringCol(default=None)
 
     whiteboard = StringCol(default=None)

@@ -215,7 +215,6 @@
         <p tal:repeat="repo view/get_rescan_links">
             <form action="+rescan" tal:attributes="action repo/fmt:url/+rescan"
                   name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
-              <span tal:content="context/fmt:url" />
               <input id="field.actions.rescan" class="button" type="submit"
               name="field.actions.rescan" value="Rescan" />
               <span tal:content="structure repo/fmt:link/+rescan" />

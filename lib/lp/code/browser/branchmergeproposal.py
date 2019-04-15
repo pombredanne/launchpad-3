@@ -809,12 +809,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def show_rescan_link(self):
-        if self.context.source_branch is not None:
-            # XXX (twom): need bzr branch support
-            return False
-        # git repository handling
-        source_job = self.context.source_git_repository.getLatestScanJob()
-        target_job = self.context.target_git_repository.getLatestScanJob()
+        source_job = self.context.parent.getLatestScanJob()
+        target_job = self.context.target_branch_or_repo.getLatestScanJob()
         if source_job and source_job.job.status == JobStatus.FAILED:
             return True
         if target_job and target_job.job.status == JobStatus.FAILED:
@@ -822,16 +818,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         return False
 
     def get_rescan_links(self):
-        if self.context.source_branch is not None:
-            # XXX (twom): need bzr branch support
-            return False
         repos = []
-        source_job = self.context.source_git_repository.getLatestScanJob()
-        target_job = self.context.target_git_repository.getLatestScanJob()
+        source_job = self.context.parent.getLatestScanJob()
+        target_job = self.context.target_branch_or_repo.getLatestScanJob()
         if source_job and source_job.job.status == JobStatus.FAILED:
-            repos.append(self.context.source_git_repository)
+            repos.append(self.context.parent)
         if target_job and target_job.job.status == JobStatus.FAILED:
-            repos.append(self.context.target_git_repository)
+            repos.append(self.context.target_branch_or_repo)
         return repos
 
 

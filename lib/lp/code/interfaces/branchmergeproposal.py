@@ -222,6 +222,9 @@ class IBranchMergeProposalPublic(IPrivacy):
         "The parent object for use in navigation: source branch for Bazaar, "
         "or source repository for Git.")
 
+    target_branch_or_repo = Attribute(
+        "The target source control branch (bzr) or repository (git)")
+
 
 class IBranchMergeProposalView(Interface):
 
