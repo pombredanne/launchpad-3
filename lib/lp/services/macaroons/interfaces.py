@@ -20,7 +20,7 @@ class IMacaroonIssuerPublic(Interface):
     issuable_via_authserver = Bool(
         "Does this issuer allow issuing macaroons via the authserver?")
 
-    def verifyMacaroon(macaroon, context, require_context=True):
+    def verifyMacaroon(macaroon, context, require_context=True, **kwargs):
         """Verify that `macaroon` is valid for `context`.
 
         :param macaroon: A `Macaroon`.
@@ -30,6 +30,8 @@ class IMacaroonIssuerPublic(Interface):
             verify that the macaroon could be valid for some context.  Use
             this in the authentication part of an
             authentication/authorisation API.
+        :param kwargs: Additional arguments that issuers may require to
+            verify a macaroon.
         :return: True if `macaroon` is valid for `context`, otherwise False.
         """
 

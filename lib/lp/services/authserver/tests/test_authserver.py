@@ -88,7 +88,7 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
             raise ValueError("Cannot handle context %r." % context)
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         return caveat_value == str(context)
 

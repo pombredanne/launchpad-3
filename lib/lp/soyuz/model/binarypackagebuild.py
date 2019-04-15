@@ -1383,13 +1383,13 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
             raise ValueError("Refusing to issue macaroon for public build.")
         return removeSecurityProxy(context).id
 
-    def checkVerificationContext(self, context):
+    def checkVerificationContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if not isinstance(context, int):
             raise ValueError("Cannot handle context %r." % context)
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For verification, the context is a `LibraryFileAlias` ID.  We check

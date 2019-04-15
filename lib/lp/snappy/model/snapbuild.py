@@ -611,13 +611,13 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
             raise ValueError("Refusing to issue macaroon for public build.")
         return removeSecurityProxy(context).id
 
-    def checkVerificationContext(self, context):
+    def checkVerificationContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if not IGitRepository.providedBy(context):
             raise ValueError("Cannot handle context %r." % context)
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For verification, the context is an `IGitRepository`.  We check that
