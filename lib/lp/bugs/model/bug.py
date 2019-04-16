@@ -1383,9 +1383,10 @@ class Bug(SQLBase, InformationTypeMixin):
             return EmptyResultSet()
         else:
             branch_ids = [branch.id for branch in linked_branches]
-            return Store.of(self).find(
+            results = Store.of(self).find(
                 BugBranch,
                 BugBranch.bug == self, In(BugBranch.branchID, branch_ids))
+            return results.order_by(BugBranch.id)
 
     def linkMergeProposal(self, merge_proposal, user, check_permissions=True):
         """See `IBug`."""
