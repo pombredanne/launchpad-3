@@ -464,7 +464,7 @@ class GitRepositoryRescanView(LaunchpadEditFormView):
         self.context.rescan()
         self.request.response.addNotification("Repository scan scheduled")
         # This can be used by BMP, in which case we want to redirect back
-        # from whence it came.
+        # whence it came.
         self.next_url = self.request.headers.get('referer')
 
 

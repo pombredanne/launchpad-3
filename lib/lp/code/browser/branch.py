@@ -657,7 +657,7 @@ class BranchRescanView(LaunchpadEditFormView):
         self.context.unscan(rescan=True)
         self.request.response.addNotification("Branch scan scheduled")
         # This can be used by BMP, in which case we want to redirect back
-        # from whence it came.
+        # whence it came.
         self.next_url = self.request.headers.get('referer')
 
 
