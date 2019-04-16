@@ -34,9 +34,7 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    LaunchpadEditFormView,
     LaunchpadFormView,
-    ReturnToReferrerMixin,
     )
 from lp.app.widgets.suggestion import TargetGitRepositoryWidget
 from lp.code.browser.branchmergeproposal import (
