@@ -34,7 +34,9 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
+    LaunchpadEditFormView,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
 from lp.app.widgets.suggestion import TargetGitRepositoryWidget
 from lp.code.browser.branchmergeproposal import (
@@ -201,6 +203,20 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
             return structured(
                 '<a href="+recipes">%s recipes</a> using this branch.',
                 count).escapedtext
+
+
+class GitRefRescanView(LaunchpadEditFormView, ReturnToReferrerMixin):
+    schema = Interface
+
+    field_names = []
+
+    @action('Rescan', name='rescan')
+    def rescan(self, action, data):
+        self.context.repository.rescan()
+        self.request.response.addNotification("Repository scan scheduled")
+        # This can be used by BMP, in which case we want to redirect back
+        # whence it came.
+        self.next_url = self._return_url
 
 
 class GitRefRegisterMergeProposalSchema(Interface):

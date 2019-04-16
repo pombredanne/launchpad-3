@@ -809,23 +809,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def rescan_links(self):
-        repos = []
+        links = []
         source_job = self.context.merge_source.getLatestScanJob()
         target_job = self.context.merge_target.getLatestScanJob()
         if source_job and source_job.job.status == JobStatus.FAILED:
-            # Rescan is a repository operation for git, but merge_source is
-            # a GitFrozenRef, so if we're dealing with git,
-            # get the repository instead.
-            if self.context.source_git_repository is None:
-                repos.append(self.context.merge_source)
-            else:
-                repos.append(self.context.source_git_repository)
+            links.append(self.context.merge_source)
         if target_job and target_job.job.status == JobStatus.FAILED:
-            if self.context.target_git_repository is None:
-                repos.append(self.context.merge_target)
-            else:
-                repos.append(self.context.target_git_repository)
-        return repos
+            links.append(self.merged_target)
+        return links
 
 
 @delegate_to(ICodeReviewVoteReference)

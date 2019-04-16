@@ -977,6 +977,12 @@
             template="../templates/gitref-recipes.pt"/>
     </browser:pages>
     <browser:page
+        name="+rescan"
+        for="lp.code.interfaces.gitref.IGitRef"
+        class="lp.code.browser.gitref.GitRefRescanView"
+        permission="launchpad.Edit"
+        template="../templates/gitref-rescan.pt"/>
+    <browser:page
         for="lp.code.interfaces.gitref.IGitRef"
         name="+macros"
         permission="zope.Public"

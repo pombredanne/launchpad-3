@@ -223,7 +223,7 @@
                 accept-charset="UTF-8">
             <input class="button" type="submit"
             name="field.actions.rescan" value="Rescan" />
-            <span tal:content="structure rescan_link/fmt:link/+rescan" />
+            <span tal:content="structure rescan_link/fmt:link" />
           </form>
         </p>
     </div>
