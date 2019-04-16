@@ -120,7 +120,7 @@
         //<![CDATA[
         LPJS.use('base', 'node', 'console', 'event',
             'oop', 'lp', 'lp.app.foldables','lp.app.sorttable',
-            'lp.app.inlinehelp', 'lp.app.links', 'lp.app.longpoll',
+            'lp.app.inlinehelp', 'lp.app.links',
             'lp.bugs.bugtask_index', 'lp.bugs.subscribers',
             'lp.app.ellipsis', 'lp.code.branchmergeproposal.diff',
             'lp.views.global',
@@ -135,14 +135,6 @@
                 Y.lp.activate_collapsibles();
                 Y.lp.app.foldables.activate();
                 Y.lp.app.links.check_valid_lp_links();
-                // Longpolling will only start if
-                // LP.cache.longpoll is populated.
-                // We use Y.later to work around a Safari/Chrome 'feature':
-                // The mouse cursor stays 'busy' until all the requests started during
-                // page load are finished.  Hence we want the long poll request to start
-                // right *after* the page has loaded.
-                Y.later(0, Y.lp.app.longpoll, Y.lp.app.longpoll.setupLongPollManager);
-
             });
 
             Y.on('lp:context:web_link:changed', function(e) {
