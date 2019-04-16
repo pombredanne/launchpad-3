@@ -63,7 +63,6 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     LaunchpadFormView,
-    ReturnToReferrerMixin,
     )
 from lp.app.errors import (
     NotFoundError,
@@ -454,8 +453,7 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         return scan_job.job.status == JobStatus.FAILED
 
 
-class GitRepositoryRescanView(LaunchpadEditFormView,
-                              ReturnToReferrerMixin):
+class GitRepositoryRescanView(LaunchpadEditFormView):
 
     schema = Interface
 
@@ -465,9 +463,7 @@ class GitRepositoryRescanView(LaunchpadEditFormView,
     def rescan(self, action, data):
         self.context.rescan()
         self.request.response.addNotification("Repository scan scheduled")
-        # This can be used by BMP, in which case we want to redirect back
-        # whence it came.
-        self.next_url = self._return_url
+        self.next_url = canonical_url(self.context)
 
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):

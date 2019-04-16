@@ -479,6 +479,10 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.repository.getLatestScanJob()
 
+    def rescan(self):
+        """See `IGitRef`."""
+        return self.repository.rescan()
+
 
 @implementer(IGitRef)
 class GitRef(StormBase, GitRefMixin):

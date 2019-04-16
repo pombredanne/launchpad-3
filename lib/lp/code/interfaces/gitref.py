@@ -397,6 +397,9 @@ class IGitRefView(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
     def getLatestScanJob():
         """Return the last IGitRefScanJobSource for the repository"""
 
+    def rescan():
+        """Force a rescan of the repository"""
+
 
 class IGitRefEdit(Interface):
     """IGitRef methods that require launchpad.Edit permission."""

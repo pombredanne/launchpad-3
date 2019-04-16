@@ -197,6 +197,12 @@
             name="++bug-links"
             template="../templates/branchmergeproposal-bug-links.pt"/>
     </browser:pages>
+    <browser:page
+        name="+rescan"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        class="lp.code.browser.branchmergeproposal.BranchMergeProposalRescanView"
+        permission="launchpad.Edit"
+        template="../templates/branchmergeproposal-rescan.pt"/>
     <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalVoteView"
@@ -976,12 +982,6 @@
             name="++ref-recipes"
             template="../templates/gitref-recipes.pt"/>
     </browser:pages>
-    <browser:page
-        name="+rescan"
-        for="lp.code.interfaces.gitref.IGitRef"
-        class="lp.code.browser.gitref.GitRefRescanView"
-        permission="launchpad.Edit"
-        template="../templates/gitref-rescan.pt"/>
     <browser:page
         for="lp.code.interfaces.gitref.IGitRef"
         name="+macros"

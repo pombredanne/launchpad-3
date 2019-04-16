@@ -205,20 +205,6 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
                 count).escapedtext
 
 
-class GitRefRescanView(LaunchpadEditFormView, ReturnToReferrerMixin):
-    schema = Interface
-
-    field_names = []
-
-    @action('Rescan', name='rescan')
-    def rescan(self, action, data):
-        self.context.repository.rescan()
-        self.request.response.addNotification("Repository scan scheduled")
-        # This can be used by BMP, in which case we want to redirect back
-        # whence it came.
-        self.next_url = self._return_url
-
-
 class GitRefRegisterMergeProposalSchema(Interface):
     """The schema to define the form for registering a new merge proposal."""
 

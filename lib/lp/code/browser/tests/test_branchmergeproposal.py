@@ -2179,23 +2179,23 @@ class TestBranchMergeProposal(BrowserTestCase):
         result = view.show_diff_update_link
         self.assertTrue(result)
 
-    def test_rescan_links_git(self):
+    def test_show_rescan_link_git(self):
         bmp = self.factory.makeBranchMergeProposalForGit()
         target_job = getUtility(IGitRefScanJobSource).create(
             bmp.target_git_repository)
         removeSecurityProxy(target_job).job._status = JobStatus.FAILED
         view = create_initialized_view(bmp, '+index')
-        self.assertEqual([bmp.target_git_repository], view.rescan_links)
+        self.assertTrue(view.show_rescan_link)
 
-    def test_rescan_links_bzr(self):
+    def test_show_rescan_link_bzr(self):
         bmp = self.factory.makeBranchMergeProposal()
         target_job = getUtility(IBranchScanJobSource).create(
             bmp.target_branch)
         removeSecurityProxy(target_job).job._status = JobStatus.FAILED
         view = create_initialized_view(bmp, '+index')
-        self.assertEqual([bmp.target_branch], view.rescan_links)
+        self.assertTrue(view.show_rescan_link)
 
-    def test_rescan_links_both_failed(self):
+    def test_show_rescan_link_both_failed(self):
         bmp = self.factory.makeBranchMergeProposalForGit()
         target_job = getUtility(IGitRefScanJobSource).create(
             bmp.target_git_repository)
@@ -2204,9 +2204,18 @@ class TestBranchMergeProposal(BrowserTestCase):
             bmp.source_git_repository)
         removeSecurityProxy(source_job).job._status = JobStatus.FAILED
         view = create_initialized_view(bmp, '+index')
-        self.assertEqual(
-            [bmp.source_git_repository, bmp.target_git_repository],
-            view.rescan_links)
+        self.assertTrue(view.show_rescan_link)
+
+    def test_show_rescan_link_latest_didnt_fail(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = getUtility(IGitRefScanJobSource).create(
+            bmp.target_git_repository)
+        removeSecurityProxy(target_job).job._status = JobStatus.COMPLETED
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.COMPLETED
+        view = create_initialized_view(bmp, '+index')
+        self.assertFalse(view.show_rescan_link)
 
 
 class TestLatestProposalsForEachBranchMixin:
