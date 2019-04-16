@@ -63,7 +63,7 @@ from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
-    LaunchpadFormView
+    LaunchpadFormView,
     )
 from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.enums import InformationType
