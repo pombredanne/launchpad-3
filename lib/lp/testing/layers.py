@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Layers used by Launchpad tests.
@@ -599,9 +599,18 @@ class MemcachedLayer(BaseLayer):
         if MemcachedLayer.client.set(test_key, "live"):
             return
 
+        # memcached >= 1.4.29 requires the item size to be at most a quarter
+        # of the memory size; 1.5.4 lifts this restriction to at most half
+        # the memory size, but we take the more conservative value.  We cap
+        # the item size at a megabyte.  Note that the argument to -m is in
+        # megabytes.
+        item_size = min(
+            config.memcached.memory_size * 1024 * 1024 / 4,
+            1024 * 1024)
         cmd = [
             'memcached',
             '-m', str(config.memcached.memory_size),
+            '-I', str(item_size),
             '-l', str(config.memcached.address),
             '-p', str(config.memcached.port),
             '-U', str(config.memcached.port),

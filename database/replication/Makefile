@@ -2,8 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This makefile is used to build and replicate the staging database.
-# To build a replicated development environent, replicate your 9.3 main
-# cluster with standard PG 9.3 streaming replication per the PG docs.
+# To build a replicated development environent, replicate your 10 main
+# cluster with standard PG 10 streaming replication per the PG docs.
 #
 # To test the staging rebuild script:
 #
@@ -56,8 +56,6 @@ stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
 	# List the dump first to make sure it is usable before destroying
 	# anything.
-	# XXX wgrant 2017-11-16: Exclude tsearch2 bits that are
-	# erreonously being dumped now.
 	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
 	    > ${DUMPLIST}
 
@@ -82,7 +80,7 @@ stagingsetup:
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
 	cat ${STAGING_DUMP} \
-	    | ./walblock.py -n 5000 -d /var/lib/postgresql/9.3/staging/pg_xlog \
+	    | ./walblock.py -n 5000 -d /var/lib/postgresql/10/staging/pg_wal \
 	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
 		--use-list=${DUMPLIST} -v
 	rm ${DUMPLIST}

@@ -9,8 +9,13 @@ __all__ = [
     'ModerateByRegistryExpertsOrAdmins',
     ]
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
 from operator import methodcaller
 
+import pytz
 from storm.expr import (
     And,
     Select,
@@ -177,6 +182,7 @@ from lp.registry.interfaces.teammembership import (
     )
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.registry.model.person import Person
+from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.identity.interfaces.emailaddress import IEmailAddress
@@ -299,6 +305,33 @@ class AnyAllowedPersonDeferredToView(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return self.forwardCheckAuthenticated(user, self.obj, 'launchpad.View')
+
+
+class AnyLegitimatePerson(AuthorizationBase):
+    """The default ruleset for the launchpad.AnyLegitimatePerson permission.
+
+    Some operations are open to Launchpad users in general, but we still don't
+    want drive-by vandalism.
+    """
+    permission = 'launchpad.AnyLegitimatePerson'
+    usedfor = Interface
+
+    def checkUnauthenticated(self):
+        return False
+
+    def _hasEnoughKarma(self, user):
+        return user.person.karma >= config.launchpad.min_legitimate_karma
+
+    def _isOldEnough(self, user):
+        return (
+            datetime.now(pytz.UTC) - user.person.account.date_created >=
+            timedelta(days=config.launchpad.min_legitimate_account_age))
+
+    def checkAuthenticated(self, user):
+        if not self._hasEnoughKarma(user) and not self._isOldEnough(user):
+            return False
+        return self.forwardCheckAuthenticated(
+            user, self.obj, 'launchpad.AnyAllowedPerson')
 
 
 class LimitedViewDeferredToView(AuthorizationBase):
@@ -2921,6 +2954,11 @@ class EditArchiveSubscriber(DelegatedAuthorization):
         return (user.in_admin or
                 user.in_commercial_admin or
                 super(EditArchiveSubscriber, self).checkAuthenticated(user))
+
+
+class AdminArchiveSubscriberSet(AdminByCommercialTeamOrAdmins):
+    """Only (commercial) admins can manipulate archive subscribers in bulk."""
+    usedfor = IArchiveSubscriberSet
 
 
 class ViewSourcePackageRecipe(DelegatedAuthorization):

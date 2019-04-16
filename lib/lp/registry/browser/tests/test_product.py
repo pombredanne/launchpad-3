@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
@@ -11,6 +11,7 @@ import re
 from urlparse import urlsplit
 
 from lazr.restful.interfaces import IJSONRequestCache
+from six.moves.urllib.parse import urlencode
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -65,7 +66,10 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
-from lp.testing.pages import find_tag_by_id
+from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from lp.testing.service_usage_helpers import set_service_usage
 from lp.testing.views import (
     create_initialized_view,
@@ -879,6 +883,82 @@ class TestProductSet(BrowserTestCase):
         with person_logged_in(owner):
             self.assertIn(public.name, browser.contents)
             self.assertIn(proprietary.name, browser.contents)
+
+    def test_latest_redaction(self):
+        # The "Latest projects registered" portlet includes only private
+        # projects for which the user has a policy grant.
+        owner = self.factory.makePerson()
+        public = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PUBLIC)
+        policy_granted = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        artifact_granted = self.factory.makeProduct(
+            owner=owner, information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            artifact_branch = self.factory.makeProductBranch(
+                product=artifact_granted, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+        viewer = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(
+            policy=self.factory.makeAccessPolicy(
+                pillar=policy_granted, check_existing=True),
+            grantee=viewer, grantor=owner)
+        self.factory.makeAccessArtifactGrant(
+            concrete_artifact=artifact_branch, grantee=viewer, grantor=owner)
+        browser = self.getViewBrowser(getUtility(IProductSet), user=viewer)
+        with person_logged_in(viewer):
+            results = [
+                re.sub('\nregistered\n.*', '', extract_text(td))
+                for td in find_tag_by_id(
+                    browser.contents, 'latest-registered').findAll('td')]
+            self.assertIn(public.display_name, results)
+            self.assertIn(policy_granted.display_name, results)
+            self.assertNotIn(artifact_granted.display_name, results)
+
+    def test_search_redaction(self):
+        # A project search includes private projects for which the user has
+        # a policy or an artifact grant, but if the user doesn't have a
+        # policy grant (and hence doesn't have launchpad.View) then the
+        # summary is
+        # redacted.
+        prefix = self.factory.getUniqueString()
+        owner = self.factory.makePerson()
+        public = self.factory.makeProduct(
+            name=self.factory.getUniqueString(prefix), owner=owner,
+            information_type=InformationType.PUBLIC)
+        policy_granted = self.factory.makeProduct(
+            name=self.factory.getUniqueString(prefix), owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        artifact_granted = self.factory.makeProduct(
+            name=self.factory.getUniqueString(prefix), owner=owner,
+            information_type=InformationType.PROPRIETARY)
+        with person_logged_in(owner):
+            artifact_branch = self.factory.makeProductBranch(
+                product=artifact_granted, owner=owner,
+                information_type=InformationType.PROPRIETARY)
+        viewer = self.factory.makePerson()
+        self.factory.makeAccessPolicyGrant(
+            policy=self.factory.makeAccessPolicy(
+                pillar=policy_granted, check_existing=True),
+            grantee=viewer, grantor=owner)
+        self.factory.makeAccessArtifactGrant(
+            concrete_artifact=artifact_branch, grantee=viewer, grantor=owner)
+        search_url = (
+            canonical_url(getUtility(IProductSet)) + '?' +
+            urlencode({'text': prefix}))
+        browser = self.getUserBrowser(search_url, user=viewer)
+        with person_logged_in(viewer):
+            expected_results = [
+                '%s\n%s' % (public.display_name, public.summary),
+                '%s\n%s' % (
+                    policy_granted.display_name, policy_granted.summary),
+                artifact_granted.display_name,
+                ]
+            self.assertContentEqual(
+                expected_results,
+                [extract_text(td)
+                 for td in find_tag_by_id(
+                     browser.contents, 'search-results').findAll('td')])
 
 
 class TestProductSetBranchView(TestCaseWithFactory):

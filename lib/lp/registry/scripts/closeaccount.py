@@ -18,6 +18,7 @@ from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
+from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.interfaces.person import PersonCreationRationale
 from lp.registry.model.person import (
     Person,
@@ -37,6 +38,9 @@ from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
     )
+from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
 
 def close_account(username, log):
@@ -45,6 +49,7 @@ def close_account(username, log):
     Return True on success, or log an error message and return False
     """
     store = IMasterStore(Person)
+    janitor = getUtility(ILaunchpadCelebrities).janitor
 
     cur = cursor()
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -143,6 +148,10 @@ def close_account(username, log):
         ('usertouseremail', 'recipient'),
         ('usertouseremail', 'sender'),
         ('xref', 'creator'),
+
+        # This is maintained by trigger functions and a garbo job.  It
+        # doesn't need to be updated immediately.
+        ('bugsummary', 'viewed_by'),
         }
     reference_names = {
         (src_tab, src_col) for src_tab, src_col, _, _, _, _ in references}
@@ -193,7 +202,6 @@ def close_account(username, log):
         account = removeSecurityProxy(person.account)
         account.displayname = 'Removed by request'
         account.creation_rationale = AccountCreationRationale.UNKNOWN
-        janitor = getUtility(ILaunchpadCelebrities).janitor
         person.setAccountStatus(
             AccountStatus.CLOSED, janitor, "Closed using close-account.")
 
@@ -307,6 +315,33 @@ def close_account(username, log):
     # Any remaining past sprint attendance records can harmlessly refer to
     # the placeholder person row.
     skip.add(('sprintattendance', 'attendee'))
+
+    # generate_ppa_htaccess currently relies on seeing active
+    # ArchiveAuthToken rows so that it knows which ones to remove from
+    # .htpasswd files on disk in response to the cancellation of the
+    # corresponding ArchiveSubscriber rows; but even once PPA authorisation
+    # is handled dynamically, we probably still want to have the per-person
+    # audit trail here.
+    archive_subscriber_ids = set(store.find(
+        ArchiveSubscriber.id,
+        ArchiveSubscriber.subscriber_id == person.id,
+        ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT))
+    if archive_subscriber_ids:
+        getUtility(IArchiveSubscriberSet).cancel(
+            archive_subscriber_ids, janitor)
+    skip.add(('archivesubscriber', 'subscriber'))
+    skip.add(('archiveauthtoken', 'person'))
+
+    # Remove hardware submissions.
+    table_notification('HWSubmissionDevice')
+    store.execute("""
+        DELETE FROM HWSubmissionDevice
+        USING HWSubmission
+        WHERE HWSubmission.id = HWSubmissionDevice.submission
+            AND owner = ?
+        """, (person.id,))
+    table_notification('HWSubmission')
+    store.find(HWSubmission, HWSubmission.ownerID == person.id).remove()
 
     # Closing the account will only work if all references have been handled
     # by this point.  If not, it's safer to bail out.  It's OK if this

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`PPAKeyGenerator` script class tests."""
@@ -81,7 +81,8 @@ class TestPPAKeyGenerator(TestCase):
             archive_reference='~cprov/ubuntu/ppa')
         self.assertRaisesWithContent(
             LaunchpadScriptFailure,
-            ("PPA for Celso Providelo already has a signing_key (%s)" %
+            ("~cprov/ubuntu/ppa (PPA for Celso Providelo) already has a "
+             "signing_key (%s)" %
              cprov.archive.signing_key.fingerprint),
             key_generator.main)
 

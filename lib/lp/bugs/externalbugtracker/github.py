@@ -1,4 +1,4 @@
-# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """GitHub ExternalBugTracker utility."""
@@ -183,10 +183,10 @@ class GitHub(ExternalBugTracker):
         for remote_bug in self._getCollection(page):
             # We're only interested in the bug if it's one of the ones in
             # bug_ids.
-            if remote_bug["id"] not in bug_ids:
+            if remote_bug["number"] not in bug_ids:
                 continue
-            bugs[remote_bug["id"]] = remote_bug
-            self.cached_bugs[remote_bug["id"]] = remote_bug
+            bugs[remote_bug["number"]] = remote_bug
+            self.cached_bugs[remote_bug["number"]] = remote_bug
         return bugs
 
     def getRemoteImportance(self, bug_id):
