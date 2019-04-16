@@ -64,6 +64,7 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadEditFormView,
     LaunchpadFormView,
+    ReturnToReferrerMixin,
     )
 from lp.app.browser.lazrjs import EnumChoiceWidget
 from lp.app.enums import InformationType
@@ -646,7 +647,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         return self.context.getSpecificationLinks(self.user)
 
 
-class BranchRescanView(LaunchpadEditFormView):
+class BranchRescanView(LaunchpadEditFormView, ReturnToReferrerMixin):
 
     schema = Interface
 
@@ -658,7 +659,7 @@ class BranchRescanView(LaunchpadEditFormView):
         self.request.response.addNotification("Branch scan scheduled")
         # This can be used by BMP, in which case we want to redirect back
         # whence it came.
-        self.next_url = self.request.headers.get('referer')
+        self.next_url = self._return_url
 
 
 class BranchEditFormView(LaunchpadEditFormView):
