@@ -208,7 +208,7 @@
         </p>
       </div>
     </div>
-    <div class="yui-g" tal:repeat="repo view/get_rescan_links">
+    <div class="yui-g" tal:repeat="repo view/rescan_links">
       <div class="pending-update" id="diff-pending-update">
         <span tal:condition="repeat/repo/start">
           <h3>Update scan failed</h3>
