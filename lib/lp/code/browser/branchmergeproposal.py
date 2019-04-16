@@ -832,8 +832,6 @@ class BranchMergeProposalRescanView(LaunchpadEditFormView):
         if target_job and target_job.job.status == JobStatus.FAILED:
             self.context.merge_target.rescan()
         self.request.response.addNotification("Rescan scheduled")
-        # This can be used by BMP, in which case we want to redirect back
-        # whence it came.
         self.next_url = canonical_url(self.context)
 
 
