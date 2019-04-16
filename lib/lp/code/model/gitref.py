@@ -475,6 +475,10 @@ class GitRefMixin:
             self.repository.checkRefPermissions(
                 person, [self.path])[self.path])
 
+    def getLatestScanJob(self):
+        """See `IGitRef`."""
+        return self.repository.getLatestScanJob()
+
 
 @implementer(IGitRef)
 class GitRef(StormBase, GitRefMixin):

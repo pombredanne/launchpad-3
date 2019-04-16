@@ -208,24 +208,24 @@
         </p>
       </div>
     </div>
-    <div class="yui-g" tal:repeat="repo view/rescan_links">
-      <div class="pending-update" id="diff-pending-update">
-        <span tal:condition="repeat/repo/start">
-          <h3>Update scan failed</h3>
-          <p>
-            At least one of the branches involved have failed to scan.
-            You can manually schedule a rescan if required.
-          </p>
-        </span>
+    <div class="yui-g pending-update" id="diff-pending-update"
+       tal:define="rescan_links view/rescan_links"
+       tal:condition="rescan_links">
+        <h3>Update scan failed</h3>
         <p>
-          <form action="+rescan" tal:attributes="action repo/fmt:url/+rescan"
-                name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
-            <input id="field.actions.rescan" class="button" type="submit"
+          At least one of the branches involved have failed to scan.
+          You can manually schedule a rescan if required.
+        </p>
+        <p>
+          <form tal:repeat="rescan_link rescan_links" action="+rescan"
+                tal:attributes="action rescan_link/fmt:url/+rescan"
+                name="launchpadform" method="post" enctype="multipart/form-data"
+                accept-charset="UTF-8">
+            <input class="button" type="submit"
             name="field.actions.rescan" value="Rescan" />
-            <span tal:content="structure repo/fmt:link/+rescan" />
+            <span tal:content="structure rescan_link/fmt:link/+rescan" />
           </form>
         </p>
-      </div>
     </div>
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
