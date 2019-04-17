@@ -1123,7 +1123,10 @@ class IBranchModerate(Interface):
     @export_write_operation()
     @operation_for_version('devel')
     def rescan():
-        """Wrapper around rescan for compatibility with IGitRepositoryEdit"""
+        """Reset this branch's scan data and request a rescan.
+
+        A convenience function wrapper around unscan().
+        """
 
 
 class IBranchEditableAttributes(Interface):
