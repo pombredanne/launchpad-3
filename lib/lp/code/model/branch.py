@@ -1301,6 +1301,10 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             job.celeryRunOnCommit()
         return (self.last_mirrored_id, old_scanned_id)
 
+    def rescan(self):
+        """See `IBranchModerate`."""
+        self.unscan(rescan=True)
+
     def getLatestScanJob(self):
         from lp.code.model.branchjob import BranchJob, BranchScanJob
         latest_job = IStore(BranchJob).find(

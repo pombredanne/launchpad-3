@@ -1120,6 +1120,14 @@ class IBranchModerate(Interface):
     def unscan(rescan=True):
         """Reset this branch's scan data and optionally request a scan."""
 
+    @export_write_operation()
+    @operation_for_version('devel')
+    def rescan():
+        """Reset this branch's scan data and request a rescan.
+
+        A convenience function wrapper around unscan().
+        """
+
 
 class IBranchEditableAttributes(Interface):
     """IBranch attributes that can be edited.
