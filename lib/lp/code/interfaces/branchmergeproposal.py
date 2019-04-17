@@ -680,12 +680,6 @@ class IBranchMergeProposalEdit(Interface):
         the details are updated.
         """
 
-    def rescan():
-        """Force a rescan of the target/source branch or repository
-
-        This may be helpful in cases where a previous scan crashed.
-        """
-
 
 class IBranchMergeProposalAnyAllowedPerson(IBugLinkTarget):
 
