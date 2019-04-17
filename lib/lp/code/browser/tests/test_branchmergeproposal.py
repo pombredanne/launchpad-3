@@ -74,6 +74,8 @@ from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     )
+from lp.code.interfaces.branchjob import IBranchScanJobSource
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
@@ -2176,6 +2178,95 @@ class TestBranchMergeProposal(BrowserTestCase):
         view = create_initialized_view(bmp, '+index')
         result = view.show_diff_update_link
         self.assertTrue(result)
+
+    def test_show_rescan_link_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = getUtility(IGitRefScanJobSource).create(
+            bmp.target_git_repository)
+        removeSecurityProxy(target_job).job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        self.assertTrue(view.show_rescan_link)
+
+    def test_show_rescan_link_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        target_job = getUtility(IBranchScanJobSource).create(
+            bmp.target_branch)
+        removeSecurityProxy(target_job).job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        self.assertTrue(view.show_rescan_link)
+
+    def test_show_rescan_link_both_failed(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = getUtility(IGitRefScanJobSource).create(
+            bmp.target_git_repository)
+        removeSecurityProxy(target_job).job._status = JobStatus.FAILED
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        self.assertTrue(view.show_rescan_link)
+
+    def test_show_rescan_link_latest_didnt_fail(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = getUtility(IGitRefScanJobSource).create(
+            bmp.target_git_repository)
+        removeSecurityProxy(target_job).job._status = JobStatus.COMPLETED
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.COMPLETED
+        view = create_initialized_view(bmp, '+index')
+        self.assertFalse(view.show_rescan_link)
+
+
+class TestBranchMergeProposalRescanView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_rescan_with_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+
+        with person_logged_in(bmp.merge_source.owner):
+            request = LaunchpadTestRequest(
+                method='POST',
+                form={
+                    'field.actions.rescan': 'Rescan',
+                    })
+            request.setPrincipal(bmp.merge_source.owner)
+            view = create_initialized_view(
+                bmp,
+                name='+rescan',
+                request=request)
+
+        self.assertEqual(
+            'Rescan scheduled',
+            view.request.response.notifications[0].message
+        )
+
+    def test_rescan_with_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        source_job = getUtility(IBranchScanJobSource).create(
+            bmp.source_branch)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+
+        with person_logged_in(bmp.merge_source.owner):
+            request = LaunchpadTestRequest(
+                method='POST',
+                form={
+                    'field.actions.rescan': 'Rescan',
+                    })
+            request.setPrincipal(bmp.merge_source.owner)
+            view = create_initialized_view(
+                bmp,
+                name='+rescan',
+                request=request)
+
+        self.assertEqual(
+            'Rescan scheduled',
+            view.request.response.notifications[0].message
+        )
 
 
 class TestLatestProposalsForEachBranchMixin:

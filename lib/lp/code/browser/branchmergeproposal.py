@@ -807,6 +807,33 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             return False
         return latest_preview.job.status == JobStatus.FAILED
 
+    @property
+    def show_rescan_link(self):
+        source_job = self.context.merge_source.getLatestScanJob()
+        target_job = self.context.merge_target.getLatestScanJob()
+        if source_job and source_job.job.status == JobStatus.FAILED:
+            return True
+        if target_job and target_job.job.status == JobStatus.FAILED:
+            return True
+        return False
+
+
+class BranchMergeProposalRescanView(LaunchpadEditFormView):
+    schema = Interface
+
+    field_names = []
+
+    @action('Rescan', name='rescan')
+    def rescan(self, action, data):
+        source_job = self.context.merge_source.getLatestScanJob()
+        target_job = self.context.merge_target.getLatestScanJob()
+        if source_job and source_job.job.status == JobStatus.FAILED:
+            self.context.merge_source.rescan()
+        if target_job and target_job.job.status == JobStatus.FAILED:
+            self.context.merge_target.rescan()
+        self.request.response.addNotification("Rescan scheduled")
+        self.next_url = canonical_url(self.context)
+
 
 @delegate_to(ICodeReviewVoteReference)
 class DecoratedCodeReviewVoteReference:
