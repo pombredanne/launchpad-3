@@ -210,18 +210,18 @@
     </div>
     <div class="yui-g pending-update" id="diff-pending-update"
        tal:condition="view/show_rescan_link">
-        <h3>Update scan failed</h3>
-        <p>
-          At least one of the branches involved have failed to scan.
-          You can manually schedule a rescan if required.
-        </p>
-        <p>
-          <form action="+rescan" name="launchpadform" method="post"
-                enctype="multipart/form-data" accept-charset="UTF-8">
-            <input class="button" type="submit"
-            name="field.actions.rescan" value="Rescan" />
-          </form>
-        </p>
+      <h3>Update scan failed</h3>
+      <p>
+        At least one of the branches involved have failed to scan.
+        You can manually schedule a rescan if required.
+      </p>
+      <p>
+        <form action="+rescan" name="launchpadform" method="post"
+              enctype="multipart/form-data" accept-charset="UTF-8">
+          <input class="button" type="submit"
+                  name="field.actions.rescan" value="Rescan" />
+        </form>
+      </p>
     </div>
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
