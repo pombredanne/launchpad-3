@@ -2218,6 +2218,57 @@ class TestBranchMergeProposal(BrowserTestCase):
         self.assertFalse(view.show_rescan_link)
 
 
+class TestBranchMergeProposalRescanView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_rescan_with_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+
+        with person_logged_in(bmp.merge_source.owner):
+            request = LaunchpadTestRequest(
+                method='POST',
+                form={
+                    'field.actions.rescan': 'Rescan',
+                    })
+            request.setPrincipal(bmp.merge_source.owner)
+            view = create_initialized_view(
+                bmp,
+                name='+rescan',
+                request=request)
+
+        self.assertEqual(
+            'Rescan scheduled',
+            view.request.response.notifications[0].message
+        )
+
+    def test_rescan_with_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        source_job = getUtility(IBranchScanJobSource).create(
+            bmp.source_branch)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+
+        with person_logged_in(bmp.merge_source.owner):
+            request = LaunchpadTestRequest(
+                method='POST',
+                form={
+                    'field.actions.rescan': 'Rescan',
+                    })
+            request.setPrincipal(bmp.merge_source.owner)
+            view = create_initialized_view(
+                bmp,
+                name='+rescan',
+                request=request)
+
+        self.assertEqual(
+            'Rescan scheduled',
+            view.request.response.notifications[0].message
+        )
+
+
 class TestLatestProposalsForEachBranchMixin:
     """Confirm that the latest branch is returned."""
 
