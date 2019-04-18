@@ -448,3 +448,25 @@ class TestCloseAccount(TestCaseWithFactory):
             BugSummary.viewed_by_id.is_in([person.id, other_person.id])))
         self.assertThat(summaries, MatchesSetwise(
             MatchesStructure.byEquality(viewed_by=other_person)))
+
+    def test_skips_bug_nomination(self):
+        person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        targets = [self.factory.makeProductSeries() for _ in range(2)]
+        self.factory.makeBugTask(bug=bug, target=targets[0].parent)
+        bug.addNomination(person, targets[0])
+        self.factory.makeBugTask(bug=bug, target=targets[1].parent)
+        bug.addNomination(other_person, targets[1])
+        self.assertThat(bug.getNominations(), MatchesSetwise(
+            MatchesStructure.byEquality(owner=person),
+            MatchesStructure.byEquality(owner=other_person)))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertThat(bug.getNominations(), MatchesSetwise(
+            MatchesStructure.byEquality(owner=person),
+            MatchesStructure.byEquality(owner=other_person)))
