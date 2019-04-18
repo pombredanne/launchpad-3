@@ -448,3 +448,15 @@ class TestCloseAccount(TestCaseWithFactory):
             BugSummary.viewed_by_id.is_in([person.id, other_person.id])))
         self.assertThat(summaries, MatchesSetwise(
             MatchesStructure.byEquality(viewed_by=other_person)))
+
+    def test_skips_inactive_product_owner(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=person)
+        product.active = False
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual(person, product.owner)

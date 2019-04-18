@@ -24,6 +24,8 @@ from lp.registry.model.person import (
     Person,
     PersonSettings,
     )
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
 from lp.services.database import postgresql
 from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import IMasterStore
@@ -119,6 +121,7 @@ def close_account(username, log):
         ('poexportrequest', 'person'),
         ('pofile', 'lasttranslator'),
         ('pofiletranslator', 'person'),
+        ('product', 'registrant'),
         ('question', 'answerer'),
         ('questionreopening', 'answerer'),
         ('questionreopening', 'reopener'),
@@ -343,11 +346,39 @@ def close_account(username, log):
     table_notification('HWSubmission')
     store.find(HWSubmission, HWSubmission.ownerID == person.id).remove()
 
+    has_references = False
+
+    # Check for active related projects, and skip inactive ones.
+    for col in 'bug_supervisor', 'driver', 'owner':
+        # Raw SQL because otherwise using Product._owner while displaying it
+        # as Product.owner is too fiddly.
+        result = store.execute("""
+            SELECT COUNT(*) FROM product WHERE active AND %(col)s = ?
+            """ % {'col': col},
+            (person.id,))
+        count = result.get_one()[0]
+        if count:
+            log.error(
+                "User %s is still referenced by %d product.%s values" %
+                (person_name, count, col))
+            has_references = True
+        skip.add(('product', col))
+    for col in 'driver', 'owner':
+        count = store.find(
+            ProductSeries,
+            ProductSeries.product == Product.id, Product.active,
+            getattr(ProductSeries, col) == person).count()
+        if count:
+            log.error(
+                "User %s is still referenced by %d productseries.%s values" %
+                (person_name, count, col))
+            has_references = True
+        skip.add(('productseries', col))
+
     # Closing the account will only work if all references have been handled
     # by this point.  If not, it's safer to bail out.  It's OK if this
     # doesn't work in all conceivable situations, since some of them may
     # require careful thought and decisions by a human administrator.
-    has_references = False
     for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
         if (src_tab, src_col) in skip:
             continue
