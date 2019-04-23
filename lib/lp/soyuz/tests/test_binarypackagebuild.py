@@ -931,7 +931,7 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         self.assertEqual("binary-package-build", macaroon.identifier)
         self.assertThat(macaroon.caveats, MatchesListwise([
             MatchesStructure.byEquality(
-                caveat_id="lp.binary-package-build %s" % build.id),
+                caveat_id="lp.principal.binary-package-build %s" % build.id),
             ]))
 
     def test_checkMacaroonIssuer_good(self):

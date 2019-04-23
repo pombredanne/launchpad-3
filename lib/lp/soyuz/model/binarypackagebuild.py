@@ -1394,8 +1394,13 @@ class BinaryPackageBuildMacaroonIssuer:
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname,
             identifier="binary-package-build", key=self._root_secret)
+        # The "lp.principal" prefix indicates that this caveat constrains
+        # the macaroon to access only resources that should be accessible
+        # when acting on behalf of the named build, rather than to access
+        # the named build directly.
         macaroon.add_first_party_caveat(
-            "lp.binary-package-build %s" % removeSecurityProxy(context).id)
+            "lp.principal.binary-package-build %s" %
+            removeSecurityProxy(context).id)
         return macaroon
 
     def checkMacaroonIssuer(self, macaroon):
@@ -1405,7 +1410,8 @@ class BinaryPackageBuildMacaroonIssuer:
         try:
             verifier = Verifier()
             verifier.satisfy_general(
-                lambda caveat: caveat.startswith("lp.binary-package-build "))
+                lambda caveat: caveat.startswith(
+                    "lp.principal.binary-package-build "))
             return verifier.verify(macaroon, self._root_secret)
         except Exception:
             return False
@@ -1427,7 +1433,7 @@ class BinaryPackageBuildMacaroonIssuer:
             return False
 
         def verify_build(caveat):
-            prefix = "lp.binary-package-build "
+            prefix = "lp.principal.binary-package-build "
             if not caveat.startswith(prefix):
                 return False
             try:
