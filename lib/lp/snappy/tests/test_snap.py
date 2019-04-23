@@ -1584,6 +1584,22 @@ class TestSnapSet(TestCaseWithFactory):
             {"name": "test-snap"},
             getUtility(ISnapSet).getSnapcraftYaml(branch))
 
+    def test_getSnapcraftYaml_bzr_build_aux_snap_snapcraft_yaml(self):
+        def getInventory(unique_name, dirname, *args, **kwargs):
+            if dirname == "build-aux/snap":
+                return {"filelist": [{
+                    "filename": "snapcraft.yaml", "file_id": "some-file-id",
+                    }]}
+            else:
+                raise BranchFileNotFound("dummy", dirname)
+
+        self.useFixture(BranchHostingFixture(
+            blob=b"name: test-snap")).getInventory = getInventory
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(branch))
+
     def test_getSnapcraftYaml_bzr_plain_snapcraft_yaml(self):
         def getInventory(unique_name, dirname, *args, **kwargs):
             if dirname == "":
@@ -1627,6 +1643,19 @@ class TestSnapSet(TestCaseWithFactory):
     def test_getSnapcraftYaml_git_snap_snapcraft_yaml(self):
         def getBlob(path, filename, *args, **kwargs):
             if filename == "snap/snapcraft.yaml":
+                return b"name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
+        self.useFixture(GitHostingFixture()).getBlob = getBlob
+        [git_ref] = self.factory.makeGitRefs()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(git_ref))
+
+    def test_getSnapcraftYaml_git_build_aux_snap_snapcraft_yaml(self):
+        def getBlob(path, filename, *args, **kwargs):
+            if filename == "build-aux/snap/snapcraft.yaml":
                 return b"name: test-snap"
             else:
                 raise GitRepositoryBlobNotFound("dummy", filename)

@@ -1,6 +1,8 @@
 # Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
+
 from datetime import datetime
 from gzip import GzipFile
 import hashlib
@@ -14,12 +16,14 @@ from lazr.uri import URI
 import pytz
 import requests
 from storm.expr import SQL
-import testtools
 from testtools.matchers import EndsWith
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildStatus
 from lp.services.config import config
+from lp.services.config.fixture import ConfigUseFixture
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     cursor,
@@ -37,10 +41,17 @@ from lp.services.librarian.model import (
     TimeLimitedToken,
     )
 from lp.services.librarianserver.storage import LibrarianStorage
-from lp.testing.dbuser import switch_dbuser
+from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
+    AppServerLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
+    ZopelessAppServerLayer,
     )
 
 
@@ -50,18 +61,61 @@ def uri_path_replace(url, old, new):
     return str(parsed.replace(path=parsed.path.replace(old, new)))
 
 
-class LibrarianWebTestCase(testtools.TestCase):
-    """Test the librarian's web interface."""
-    layer = LaunchpadFunctionalLayer
+class LibrarianWebTestMixin:
 
-    # Add stuff to a librarian via the upload port, then check that it's
-    # immediately visible on the web interface. (in an attempt to test ddaa's
-    # 500-error issue).
+    layer = LaunchpadFunctionalLayer
 
     def commit(self):
         """Synchronize database state."""
         flush_database_updates()
         transaction.commit()
+
+    def get_restricted_file_and_public_url(self, filename='sample'):
+        # Use a regular LibrarianClient to ensure we speak to the
+        # nonrestricted port on the librarian which is where secured
+        # restricted files are served from.
+        client = LibrarianClient()
+        fileAlias = client.addFile(
+            filename, 12, BytesIO(b'a' * 12), contentType='text/plain')
+        # Note: We're deliberately using the wrong url here: we should be
+        # passing secure=True to getURLForAlias, but to use the returned URL
+        # we would need a wildcard DNS facility patched into requests; instead
+        # we use the *deliberate* choice of having the path of secure and
+        # insecure urls be the same, so that we can test it: the server code
+        # doesn't need to know about the fancy wildcard domains.
+        url = client.getURLForAlias(fileAlias)
+        # Now that we have a url which talks to the public librarian, make the
+        # file restricted.
+        IMasterStore(LibraryFileAlias).find(
+            LibraryFileAlias, LibraryFileAlias.id == fileAlias).set(
+                restricted=True)
+        self.commit()
+        return fileAlias, url
+
+    def require404(self, url, **kwargs):
+        """Assert that opening `url` raises a 404."""
+        response = requests.get(url, **kwargs)
+        self.assertEqual(404, response.status_code)
+
+
+class LibrarianZopelessWebTestMixin(LibrarianWebTestMixin):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(LibrarianZopelessWebTestMixin, self).setUp()
+        switch_dbuser(config.librarian.dbuser)
+
+    def commit(self):
+        LaunchpadZopelessLayer.commit()
+
+
+class LibrarianWebTestCase(LibrarianWebTestMixin, TestCaseWithFactory):
+    """Test the librarian's web interface."""
+
+    # Add stuff to a librarian via the upload port, then check that it's
+    # immediately visible on the web interface. (in an attempt to test ddaa's
+    # 500-error issue).
 
     def test_uploadThenDownload(self):
         client = LibrarianClient()
@@ -286,28 +340,6 @@ class LibrarianWebTestCase(testtools.TestCase):
         self.assertNotIn('Last-Modified', response.headers)
         self.assertNotIn('Cache-Control', response.headers)
 
-    def get_restricted_file_and_public_url(self, filename='sample'):
-        # Use a regular LibrarianClient to ensure we speak to the
-        # nonrestricted port on the librarian which is where secured
-        # restricted files are served from.
-        client = LibrarianClient()
-        fileAlias = client.addFile(
-            filename, 12, BytesIO(b'a' * 12), contentType='text/plain')
-        # Note: We're deliberately using the wrong url here: we should be
-        # passing secure=True to getURLForAlias, but to use the returned URL
-        # we would need a wildcard DNS facility patched into requests; instead
-        # we use the *deliberate* choice of having the path of secure and
-        # insecure urls be the same, so that we can test it: the server code
-        # doesn't need to know about the fancy wildcard domains.
-        url = client.getURLForAlias(fileAlias)
-        # Now that we have a url which talks to the public librarian, make the
-        # file restricted.
-        IMasterStore(LibraryFileAlias).find(
-            LibraryFileAlias, LibraryFileAlias.id == fileAlias).set(
-                restricted=True)
-        self.commit()
-        return fileAlias, url
-
     def test_restricted_subdomain_must_match_file_alias(self):
         # IFF there is a .restricted. in the host, then the library file alias
         # in the subdomain must match that in the path.
@@ -436,21 +468,9 @@ class LibrarianWebTestCase(testtools.TestCase):
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
         # Perhaps we should also set Expires to the Last-Modified.
 
-    def require404(self, url, **kwargs):
-        """Assert that opening `url` raises a 404."""
-        response = requests.get(url, **kwargs)
-        self.assertEqual(404, response.status_code)
 
-
-class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        super(LibrarianZopelessWebTestCase, self).setUp()
-        switch_dbuser(config.librarian.dbuser)
-
-    def commit(self):
-        LaunchpadZopelessLayer.commit()
+class LibrarianZopelessWebTestCase(
+        LibrarianZopelessWebTestMixin, LibrarianWebTestCase):
 
     def test_getURLForAliasObject(self):
         # getURLForAliasObject returns the same URL as getURLForAlias.
@@ -465,6 +485,68 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         self.assertEqual(
             client.getURLForAlias(alias_id),
             client.getURLForAliasObject(alias))
+
+
+class LibrarianWebMacaroonTestCase(LibrarianWebTestMixin, TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(LibrarianWebMacaroonTestCase, self).setUp()
+        # Copy launchpad.internal_macaroon_secret_key from the appserver
+        # config so that we can issue macaroons using it.
+        with ConfigUseFixture(self.layer.appserver_config_name):
+            key = config.launchpad.internal_macaroon_secret_key
+        self.pushConfig("launchpad", internal_macaroon_secret_key=key)
+
+    def test_restricted_with_macaroon(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        lfa = IMasterStore(LibraryFileAlias).get(LibraryFileAlias, fileAlias)
+        with dbuser('testadmin'):
+            build = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=True))
+            naked_build = removeSecurityProxy(build)
+            self.factory.makeSourcePackageReleaseFile(
+                sourcepackagerelease=naked_build.source_package_release,
+                library_file=lfa)
+            naked_build.updateStatus(BuildStatus.BUILDING)
+            issuer = getUtility(IMacaroonIssuer, "binary-package-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.commit()
+        response = requests.get(url, auth=("", macaroon.serialize()))
+        response.raise_for_status()
+        self.assertEqual(b"a" * 12, response.content)
+
+    def test_restricted_with_invalid_macaroon(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        lfa = IMasterStore(LibraryFileAlias).get(LibraryFileAlias, fileAlias)
+        with dbuser('testadmin'):
+            build = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=True))
+            naked_build = removeSecurityProxy(build)
+            self.factory.makeSourcePackageReleaseFile(
+                sourcepackagerelease=naked_build.source_package_release,
+                library_file=lfa)
+            naked_build.updateStatus(BuildStatus.BUILDING)
+        self.commit()
+        self.require404(url, auth=("", "not-a-macaroon"))
+
+    def test_restricted_with_unverifiable_macaroon(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        with dbuser('testadmin'):
+            build = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=True))
+            removeSecurityProxy(build).updateStatus(BuildStatus.BUILDING)
+            issuer = getUtility(IMacaroonIssuer, "binary-package-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.commit()
+        self.require404(url, auth=("", macaroon.serialize()))
+
+
+class LibrarianZopelessWebMacaroonTestCase(
+        LibrarianZopelessWebTestMixin, LibrarianWebMacaroonTestCase):
+
+    layer = ZopelessAppServerLayer
 
 
 class DeletedContentTestCase(unittest.TestCase):

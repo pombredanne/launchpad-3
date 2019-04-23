@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database access layer for the Librarian."""
@@ -11,11 +11,20 @@ __all__ = [
 import hashlib
 import urllib
 
+from pymacaroons import Macaroon
+from six.moves.xmlrpc_client import Fault
 from storm.expr import (
     And,
     SQL,
     )
+from twisted.internet import (
+    defer,
+    reactor as default_reactor,
+    threads,
+    )
+from twisted.web import xmlrpc
 
+from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
 from lp.services.librarian.model import (
@@ -23,6 +32,8 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     TimeLimitedToken,
     )
+from lp.services.twistedsupport import cancel_on_timeout
+from lp.xmlrpc import faults
 
 
 class Library:
@@ -36,11 +47,39 @@ class Library:
             Files created in this library will marked as restricted.
         """
         self.restricted = restricted
+        self._authserver = xmlrpc.Proxy(
+            config.librarian.authentication_endpoint,
+            connectTimeout=config.librarian.authentication_timeout)
 
     # The following methods are read-only queries.
 
     def lookupBySHA1(self, digest):
         return [fc.id for fc in LibraryFileContent.selectBy(sha1=digest)]
+
+    @defer.inlineCallbacks
+    def _verifyMacaroon(self, macaroon, aliasid):
+        """Verify an LFA-authorising macaroon with the authserver.
+
+        This must be called in the reactor thread.
+
+        :param macaroon: A `Macaroon`.
+        :param aliasid: A `LibraryFileAlias` ID.
+        :return: True if the authserver reports that `macaroon` authorises
+            access to `aliasid`; False if it reports that it does not.
+        :raises Fault: if the authserver request fails.
+        """
+        try:
+            yield cancel_on_timeout(
+                self._authserver.callRemote(
+                    "verifyMacaroon", macaroon.serialize(), "LibraryFileAlias",
+                    aliasid),
+                config.librarian.authentication_timeout)
+            defer.returnValue(True)
+        except Fault as fault:
+            if fault.faultCode == faults.Unauthorized.error_code:
+                defer.returnValue(False)
+            else:
+                raise
 
     def getAlias(self, aliasid, token, path):
         """Returns a LibraryFileAlias, or raises LookupError.
@@ -48,6 +87,7 @@ class Library:
         A LookupError is raised if no record with the given ID exists
         or if not related LibraryFileContent exists.
 
+        :param aliasid: A `LibraryFileAlias` ID.
         :param token: The token for the file. If None no token is present.
             When a token is supplied, it is looked up with path.
         :param path: The path the request is for, unused unless a token
@@ -59,26 +99,34 @@ class Library:
         if token and path:
             # With a token and a path we may be able to serve restricted files
             # on the public port.
-            #
-            # The URL-encoding of the path may have changed somewhere
-            # along the line, so reencode it canonically. LFA.filename
-            # can't contain slashes, so they're safe to leave unencoded.
-            # And urllib.quote erroneously excludes ~ from its safe set,
-            # while RFC 3986 says it should be unescaped and Chromium
-            # forcibly decodes it in any URL that it sees.
-            #
-            # This needs to match url_path_quote.
-            normalised_path = urllib.quote(urllib.unquote(path), safe='/~+')
-            store = session_store()
-            token_found = store.find(TimeLimitedToken,
-                SQL("age(created) < interval '1 day'"),
-                TimeLimitedToken.token == hashlib.sha256(token).hexdigest(),
-                TimeLimitedToken.path == normalised_path).is_empty()
-            store.reset()
-            if token_found:
-                raise LookupError("Token stale/pruned/path mismatch")
+            if isinstance(token, Macaroon):
+                # Macaroons have enough other constraints that they don't
+                # need to be path-specific; it's simpler and faster to just
+                # check the alias ID.
+                token_ok = threads.blockingCallFromThread(
+                    default_reactor, self._verifyMacaroon, token, aliasid)
             else:
+                # The URL-encoding of the path may have changed somewhere
+                # along the line, so reencode it canonically. LFA.filename
+                # can't contain slashes, so they're safe to leave unencoded.
+                # And urllib.quote erroneously excludes ~ from its safe set,
+                # while RFC 3986 says it should be unescaped and Chromium
+                # forcibly decodes it in any URL that it sees.
+                #
+                # This needs to match url_path_quote.
+                normalised_path = urllib.quote(
+                    urllib.unquote(path), safe='/~+')
+                store = session_store()
+                token_ok = not store.find(TimeLimitedToken,
+                    SQL("age(created) < interval '1 day'"),
+                    TimeLimitedToken.token ==
+                        hashlib.sha256(token).hexdigest(),
+                    TimeLimitedToken.path == normalised_path).is_empty()
+                store.reset()
+            if token_ok:
                 restricted = True
+            else:
+                raise LookupError("Token stale/pruned/path mismatch")
         alias = LibraryFileAlias.selectOne(And(
             LibraryFileAlias.id == aliasid,
             LibraryFileAlias.contentID == LibraryFileContent.q.id,

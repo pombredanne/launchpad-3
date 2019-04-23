@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 from urlparse import urlparse
 
+from pymacaroons import Macaroon
 from storm.exceptions import DisconnectionError
 from twisted.internet import (
     abstract,
@@ -126,6 +127,14 @@ class LibraryFileAliasResource(resource.Resource):
                 return fourOhFour
 
         token = request.args.get('token', [None])[0]
+        if token is None:
+            if not request.getUser() and request.getPassword():
+                try:
+                    token = Macaroon.deserialize(request.getPassword())
+                # XXX cjwatson 2019-04-23: Restrict exceptions once
+                # https://github.com/ecordell/pymacaroons/issues/50 is fixed.
+                except Exception:
+                    pass
         path = request.path
         deferred = deferToThread(
             self._getFileAlias, self.aliasID, token, path)

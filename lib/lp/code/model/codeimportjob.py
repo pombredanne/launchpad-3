@@ -413,10 +413,14 @@ class CodeImportJobMacaroonIssuer:
 
     @property
     def _root_secret(self):
-        secret = config.codeimport.macaroon_secret_key
+        secret = config.launchpad.internal_macaroon_secret_key
+        if not secret:
+            # XXX cjwatson 2018-11-01: Remove this once it is no longer in
+            # production configs.
+            secret = config.codeimport.macaroon_secret_key
         if not secret:
             raise RuntimeError(
-                "codeimport.macaroon_secret_key not configured.")
+                "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
     def issueMacaroon(self, context):
@@ -442,6 +446,8 @@ class CodeImportJobMacaroonIssuer:
 
     def verifyMacaroon(self, macaroon, context):
         """See `IMacaroonIssuer`."""
+        if not ICodeImportJob.providedBy(context):
+            return False
         if not self.checkMacaroonIssuer(macaroon):
             return False
         try:
