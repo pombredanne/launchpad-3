@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -69,7 +69,6 @@ from lp.app.browser.lazrjs import (
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
-from lp.app.longpoll import subscribe
 from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import DecoratedBranch
@@ -628,9 +627,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         else:
             cache.objects['branch_diff_link'] = (
                 canonical_url(self.context.parent) + '/+diff/')
-        if getFeatureFlag("longpoll.merge_proposals.enabled"):
-            cache.objects['merge_proposal_event_key'] = subscribe(
-                self.context).event_key
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):

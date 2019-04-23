@@ -32,7 +32,6 @@
   SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
 
   ProxyPreserveHost on
-  ProxyPass /+longpoll/ http://localhost:22435/ retry=1
   ProxyPass /+combo !
   ProxyPass / http://localhost:8086/ retry=1
 

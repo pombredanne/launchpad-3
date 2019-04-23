@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposals."""
@@ -1578,26 +1578,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             git_api.notify(bmp.source_git_repository.getInternalPath()))
         self.assertTrue(view.pending_diff)
 
-    def test_subscribe_to_merge_proposal_events_flag_disabled(self):
-        # If the longpoll.merge_proposals.enabled flag is not enabled the user
-        # is *not* subscribed to events relating to the merge proposal.
-        bmp = self.factory.makeBranchMergeProposal()
-        view = create_initialized_view(bmp, '+index', current_request=True)
-        cache = IJSONRequestCache(view.request)
-        self.assertNotIn("longpoll", cache.objects)
-        self.assertNotIn("merge_proposal_event_key", cache.objects)
-
-    def test_subscribe_to_merge_proposal_events_flag_enabled(self):
-        # If the longpoll.merge_proposals.enabled flag is enabled the user is
-        # subscribed to events relating to the merge proposal.
-        bmp = self.factory.makeBranchMergeProposal()
-        self.useContext(feature_flags())
-        set_feature_flag('longpoll.merge_proposals.enabled', 'enabled')
-        view = create_initialized_view(bmp, '+index', current_request=True)
-        cache = IJSONRequestCache(view.request)
-        self.assertIn("longpoll", cache.objects)
-        self.assertIn("merge_proposal_event_key", cache.objects)
-
     def test_description_is_meta_description(self):
         description = (
             "I'd like to make the bmp description appear as the meta "
@@ -2077,20 +2057,6 @@ class TestBranchMergeProposal(BrowserTestCase):
         set_feature_flag('code.incremental_diffs.enabled', 'enabled')
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
-
-    def test_pending_diff_message_with_longpoll_enabled(self):
-        # If the longpoll feature flag is enabled then the message
-        # displayed for a pending diff indicates that it'll update
-        # automatically. See also
-        # lib/lp/code/stories/branches/xx-branchmergeproposals.txt
-        self.useContext(feature_flags())
-        set_feature_flag('longpoll.merge_proposals.enabled', 'enabled')
-        bmp = self.factory.makeBranchMergeProposal()
-        browser = self.getViewBrowser(bmp)
-        self.assertIn(
-            "An updated diff is being calculated and will appear "
-                "automatically when ready.",
-            browser.contents)
 
     def test_short_conversation_comments_not_truncated(self):
         """Short comments should not be truncated."""
