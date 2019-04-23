@@ -56,8 +56,8 @@ stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
 	# List the dump first to make sure it is usable before destroying
 	# anything.
-	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
-	    > ${DUMPLIST}
+	pg_restore --list ${STAGING_DUMP} | \
+	    grep -v -E 'TRIGGER public [^ ]+ _sl_' > ${DUMPLIST}
 
 	# Deny new connections to the main DBs and kill any leftovers.
 	${STAGING_PGBOUNCER} -c 'DISABLE launchpad_staging'
@@ -103,8 +103,8 @@ stagingswitch:
 dogfood: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpdogf)
 dogfood:
 	${CREATEDB} ${DOGFOOD_DBNAME}
-	pg_restore --list ${DOGFOOD_DUMP} | grep -v 'TRIGGER public _sl_' \
-	    > ${DUMPLIST}
+	pg_restore --list ${DOGFOOD_DUMP} | \
+	    grep -v -E 'TRIGGER public [^ ]+ _sl_' > ${DUMPLIST}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
 	    --use-list=${DUMPLIST} ${EXIT_ON_ERROR} ${MULTIPROC} ${DOGFOOD_DUMP}
 	rm ${DUMPLIST}
