@@ -227,8 +227,6 @@ setup(
         'treq',
         'Twisted[conch,tls]',
         'txfixtures',
-        'txlongpoll',
-        'txlongpollfixture',
         'txpkgupload',
         'virtualenv-tools3',
         'wadllib',
