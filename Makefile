@@ -284,7 +284,7 @@ ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
 run: build inplace stop
-	bin/run -r librarian,bing-webservice,memcached,rabbitmq,txlongpoll \
+	bin/run -r librarian,bing-webservice,memcached,rabbitmq \
 	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
@@ -303,7 +303,7 @@ start-gdb: build inplace stop support_files run.gdb
 run_all: build inplace stop
 	bin/run \
 	 -r librarian,sftp,forker,mailman,codebrowse,bing-webservice,\
-	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
+	memcached,rabbitmq -i $(LPCONFIG)
 
 run_codebrowse: compile
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py

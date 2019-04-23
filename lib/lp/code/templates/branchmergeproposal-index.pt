@@ -185,12 +185,9 @@
     <div class="yui-g" tal:condition="python: not view.show_diff_update_link and view.pending_diff">
       <div class="pending-update" id="diff-pending-update">
         <h3>Updating diff...</h3>
-        <p tal:condition="not: features/longpoll.merge_proposals.enabled">
+        <p>
           An updated diff will be available in a few minutes. Reload to see the
           changes.
-        </p>
-        <p tal:condition="features/longpoll.merge_proposals.enabled">
-          An updated diff is being calculated and will appear automatically when ready.
         </p>
       </div>
     </div>
@@ -207,6 +204,21 @@
           </form>
         </p>
       </div>
+    </div>
+    <div class="yui-g pending-update" id="diff-pending-update"
+       tal:condition="view/show_rescan_link">
+      <h3>Update scan failed</h3>
+      <p>
+        At least one of the branches involved have failed to scan.
+        You can manually schedule a rescan if required.
+      </p>
+      <p>
+        <form action="+rescan" name="launchpadform" method="post"
+              enctype="multipart/form-data" accept-charset="UTF-8">
+          <input class="button" type="submit"
+                  name="field.actions.rescan" value="Rescan" />
+        </form>
+      </p>
     </div>
     <div id="review-diff" tal:condition="view/preview_diff">
       <h2>Preview Diff </h2>
@@ -226,7 +238,7 @@
   conf = <tal:status-config replace="view/status_config" />
   LPJS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
           'lp.code.branchmergeproposal.status', 'lp.app.comment',
-          'lp.code.branchmergeproposal.updater', 'lp.app.widgets.expander',
+          'lp.app.widgets.expander',
           'lp.code.branch.revisionexpander',
           'lp.code.branchmergeproposal.inlinecomments', function(Y) {
 
@@ -250,23 +262,6 @@
             }
             Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
             diffnav.render();
-        }
-
-        if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
-            var upt = Y.lp.code.branchmergeproposal.updater;
-            var cfg = {
-                 srcNode: Y.one('#diff-area'),
-                 summary_node: Y.one('#proposal-summary')
-            };
-            var updater = new upt.UpdaterWidget(cfg);
-            Y.on(LP.cache.merge_proposal_event_key, function(data) {
-                if (upt.is_mp_diff_updated(data)) {
-                    updater.update();
-                }
-            });
-            updater.on(updater.NAME + '.updated', function() {
-                diffnav.render();
-            });
         }
 
         LP.cache.comment_context = LP.cache.context;

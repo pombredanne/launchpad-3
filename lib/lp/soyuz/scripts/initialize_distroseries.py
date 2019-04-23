@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize a distroseries from its parent distroseries."""
@@ -52,11 +52,13 @@ from lp.soyuz.scripts.packagecopier import do_copy
 class InitializationError(Exception):
     """Raised when there is an exception during the initialization process."""
 
+
 # Pockets to consider when initializing the derived series from its parent(s).
 INIT_POCKETS = [
     PackagePublishingPocket.RELEASE,
     PackagePublishingPocket.SECURITY,
     PackagePublishingPocket.UPDATES,
+    PackagePublishingPocket.PROPOSED,
     ]
 
 
@@ -214,8 +216,9 @@ class InitializeDistroSeries:
     def _checkBuilds(self, parent):
         """Assert there are no pending builds for the given parent series.
 
-        Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
-        the only ones inherited via initializeFromParent method.
+        Only cares about the RELEASE, SECURITY, UPDATES and PROPOSED
+        pockets, which are the only ones inherited via the
+        initializeFromParent method.
         Restrict the check to the select architectures (if applicable).
         Restrict the check to the selected packages if a limited set of
         packagesets is used by the initialization.
@@ -240,8 +243,9 @@ class InitializeDistroSeries:
     def _checkQueue(self, parent):
         """Assert upload queue is empty on the given parent series.
 
-        Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
-        the only ones inherited via initializeFromParent method.
+        Only cares about the RELEASE, SECURITY, UPDATES and PROPOSED
+        pockets, which are the only ones inherited via the
+        initializeFromParent method.
         Restrict the check to the selected packages if a limited set of
         packagesets is used by the initialization.
          """

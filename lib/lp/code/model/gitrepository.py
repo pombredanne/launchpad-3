@@ -791,6 +791,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         if (verify_policy and
             information_type not in self.getAllowedInformationTypes(user)):
             raise CannotChangeInformationType("Forbidden by project policy.")
+        # XXX cjwatson 2019-03-29: Check privacy rules on snaps that use
+        # this repository.
         self.information_type = information_type
         self._reconcileAccess()
         if (information_type in PRIVATE_INFORMATION_TYPES and
@@ -1423,7 +1425,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         # Can't delete if the repository is associated with anything.
         return len(self.getDeletionRequirements()) == 0
 
-    def _getDeletionRequirements(self):
+    def _getDeletionRequirements(self, eager_load=False):
         """Determine what operations must be performed to delete this branch.
 
         Two dictionaries are returned, one for items that must be deleted,
@@ -1459,11 +1461,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
+        recipes = self.recipes if eager_load else self._getRecipes()
         deletion_operations.extend(
             DeletionCallable(
                 recipe, msg("This recipe uses this repository."),
                 recipe.destroySelf)
-            for recipe in self.recipes)
+            for recipe in recipes)
         if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, msg("Some snap packages build from this repository."),
@@ -1471,10 +1474,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
         return (alteration_operations, deletion_operations)
 
-    def getDeletionRequirements(self):
+    def getDeletionRequirements(self, eager_load=False):
         """See `IGitRepository`."""
         alteration_operations, deletion_operations = (
-            self._getDeletionRequirements())
+            self._getDeletionRequirements(eager_load=eager_load))
         result = {
             operation.affected_object: ("alter", operation.rationale)
             for operation in alteration_operations}

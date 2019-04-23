@@ -955,7 +955,7 @@ class BranchDeletionView(LaunchpadFormView):
         """
         reqs = []
         for item, (action, reason) in (
-            self.context.deletionRequirements().iteritems()):
+            self.context.deletionRequirements(eager_load=True).iteritems()):
             allowed = check_permission('launchpad.Edit', item)
             reqs.append((item, action, reason, allowed))
         return reqs

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -30,7 +30,8 @@ class PPAKeyGenerator(LaunchpadCronScript):
     def generateKey(self, archive):
         """Generate a signing key for the given archive."""
         self.logger.info(
-            "Generating signing key for %s" % archive.displayname)
+            "Generating signing key for %s (%s)" %
+            (archive.reference, archive.displayname))
         archive_signing_key = IArchiveSigningKey(archive)
         archive_signing_key.generateSigningKey()
         self.logger.info("Key %s" % archive.signing_key.fingerprint)
@@ -46,8 +47,9 @@ class PPAKeyGenerator(LaunchpadCronScript):
                     % self.options.archive)
             if archive.signing_key is not None:
                 raise LaunchpadScriptFailure(
-                    "%s already has a signing_key (%s)"
-                    % (archive.displayname, archive.signing_key.fingerprint))
+                    "%s (%s) already has a signing_key (%s)"
+                    % (archive.reference, archive.displayname,
+                       archive.signing_key.fingerprint))
             archives = [archive]
         else:
             archive_set = getUtility(IArchiveSet)

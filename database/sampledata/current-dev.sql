@@ -1,4 +1,4 @@
--- Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+-- Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 -- Created using pg_dump (PostgreSQL) 9.3.5
 
@@ -3825,7 +3825,6 @@ ALTER TABLE featuredproject ENABLE TRIGGER ALL;
 ALTER TABLE featureflag DISABLE TRIGGER ALL;
 
 INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 0, 'js.combo_loader.enabled', 'true', '2012-05-18 07:34:39.239649');
-INSERT INTO featureflag (scope, priority, flag, value, date_modified) VALUES ('default', 1, 'longpoll.merge_proposals.enabled', 'true', '2012-05-18 07:34:39.239649');
 
 
 ALTER TABLE featureflag ENABLE TRIGGER ALL;
@@ -3833,7 +3832,6 @@ ALTER TABLE featureflag ENABLE TRIGGER ALL;
 
 ALTER TABLE featureflagchangelogentry DISABLE TRIGGER ALL;
 
-INSERT INTO featureflagchangelogentry (id, date_changed, diff, comment, person) VALUES (1, '2011-10-06 12:44:04.37357', '+longpoll.merge_proposals.enabled	default	1	true', 'Enable long-poll for merge proposals in development.', 16);
 
 
 ALTER TABLE featureflagchangelogentry ENABLE TRIGGER ALL;

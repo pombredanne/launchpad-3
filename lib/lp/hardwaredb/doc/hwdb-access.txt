@@ -21,9 +21,9 @@ The access to most HWDB tables is restricted to members of the team
     ...         getattr(obj, attribute)
     ...     except Unauthorized:
     ...         has_access = False
-    ...         print "Access for %s denied" % person_name_or_address
+    ...         print("Access for %s denied" % person_name_or_address)
     ...     if has_access:
-    ...         print "Access for %s allowed" % person_name_or_address
+    ...         print("Access for %s allowed" % person_name_or_address)
     ...     logout()
 
     >>> def check_authorized_only_for_hwdb_team(obj, attribute):

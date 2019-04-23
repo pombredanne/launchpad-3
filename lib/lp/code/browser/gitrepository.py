@@ -1272,7 +1272,8 @@ class GitRepositoryDeletionView(LaunchpadFormView):
         """
         reqs = []
         for item, (action, reason) in (
-                self.context.getDeletionRequirements().iteritems()):
+                self.context.getDeletionRequirements(
+                    eager_load=True).iteritems()):
             allowed = check_permission("launchpad.Edit", item)
             reqs.append((item, action, reason, allowed))
         return reqs

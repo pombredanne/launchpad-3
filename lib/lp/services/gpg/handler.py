@@ -31,6 +31,8 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.validators.email import valid_email
 from lp.services.config import config
 from lp.services.gpg.interfaces import (
+    get_gpg_path,
+    get_gpgme_context,
     GPGKeyAlgorithm,
     GPGKeyDoesNotExistOnServer,
     GPGKeyExpired,
@@ -115,14 +117,6 @@ class GPGHandler:
                 shutil.rmtree(home)
 
         atexit.register(removeHome, self.home)
-
-    def _getContext(self):
-        """Return a new appropriately-configured GPGME context."""
-        context = gpgme.Context()
-        # Stick to GnuPG 1.
-        context.set_engine_info(gpgme.PROTOCOL_OpenPGP, "/usr/bin/gpg", None)
-        context.armor = True
-        return context
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
@@ -230,7 +224,7 @@ class GPGHandler:
         assert not isinstance(content, unicode)
         assert not isinstance(signature, unicode)
 
-        ctx = self._getContext()
+        ctx = get_gpgme_context()
 
         # We may not yet have the public key, so find out the fingerprint we
         # need to fetch.
@@ -273,7 +267,7 @@ class GPGHandler:
     def importPublicKey(self, content):
         """See IGPGHandler."""
         assert isinstance(content, str)
-        context = self._getContext()
+        context = get_gpgme_context()
 
         newkey = StringIO(content)
         with gpgme_timeline("import", "new public key"):
@@ -308,7 +302,7 @@ class GPGHandler:
         if 'GPG_AGENT_INFO' in os.environ:
             del os.environ['GPG_AGENT_INFO']
 
-        context = self._getContext()
+        context = get_gpgme_context()
         newkey = StringIO(content)
         with gpgme_timeline("import", "new secret key"):
             import_result = context.import_(newkey)
@@ -334,7 +328,7 @@ class GPGHandler:
 
     def generateKey(self, name):
         """See `IGPGHandler`."""
-        context = self._getContext()
+        context = get_gpgme_context()
 
         # Make sure that gpg-agent doesn't interfere.
         if 'GPG_AGENT_INFO' in os.environ:
@@ -372,8 +366,7 @@ class GPGHandler:
         if isinstance(content, unicode):
             raise TypeError('Content cannot be Unicode.')
 
-        # setup context
-        ctx = self._getContext()
+        ctx = get_gpgme_context()
 
         # setup containers
         plain = StringIO(content)
@@ -404,7 +397,7 @@ class GPGHandler:
 
         # Find the key and make it the only one allowed to sign content
         # during this session.
-        context = self._getContext()
+        context = get_gpgme_context()
         context.signers = [removeSecurityProxy(key.key)]
 
         # Set up containers.
@@ -432,7 +425,7 @@ class GPGHandler:
         """Get an iterator of the keys this gpg handler
         already knows about.
         """
-        ctx = self._getContext()
+        ctx = get_gpgme_context()
 
         # XXX michaeln 2010-05-07 bug=576405
         # Currently gpgme.Context().keylist fails if passed a unicode
@@ -457,8 +450,8 @@ class GPGHandler:
         if not key.exists_in_local_keyring:
             pubkey = self._getPubKey(fingerprint)
             key = self.importPublicKey(pubkey)
-            if fingerprint != key.fingerprint:
-                ctx = self._getContext()
+            if not key.matches(fingerprint):
+                ctx = get_gpgme_context()
                 with gpgme_timeline("delete", key.fingerprint):
                     ctx.delete(key.key)
                 raise GPGKeyMismatchOnServer(fingerprint, key.fingerprint)
@@ -602,17 +595,9 @@ class PymeKey:
         self._buildFromGpgmeKey(key)
         return self
 
-    def _getContext(self):
-        """Return a new appropriately-configured GPGME context."""
-        context = gpgme.Context()
-        # Stick to GnuPG 1.
-        context.set_engine_info(gpgme.PROTOCOL_OpenPGP, "/usr/bin/gpg", None)
-        context.armor = True
-        return context
-
     def _buildFromFingerprint(self, fingerprint):
         """Build key information from a fingerprint."""
-        context = self._getContext()
+        context = get_gpgme_context()
         # retrive additional key information
         try:
             with gpgme_timeline("get-key", fingerprint):
@@ -653,21 +638,34 @@ class PymeKey:
             self.keysize, self.algorithm.title, self.fingerprint)
 
     def export(self):
-        """See `PymeKey`."""
+        """See `IPymeKey`."""
         if self.secret:
             # XXX cprov 20081014: gpgme_op_export() only supports public keys.
             # See http://www.fifi.org/cgi-bin/info2www?(gpgme)Exporting+Keys
             p = subprocess.Popen(
-                ['gpg', '--export-secret-keys', '-a', self.fingerprint],
+                [get_gpg_path(), '--export-secret-keys', '-a',
+                 self.fingerprint],
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             return p.stdout.read()
 
-        context = self._getContext()
+        context = get_gpgme_context()
         keydata = StringIO()
         with gpgme_timeline("export", self.fingerprint):
             context.export(self.fingerprint.encode('ascii'), keydata)
 
         return keydata.getvalue()
+
+    def matches(self, fingerprint):
+        """See `IPymeKey`."""
+        for subkey in self.key.subkeys:
+            if fingerprint == subkey.fpr:
+                return True
+            # XXX cjwatson 2019-03-13: Remove affordance for 64-bit key IDs
+            # once we're on GnuPG 2.2.7 and GPGME 1.11.0.  See comment in
+            # getVerifiedSignature.
+            if len(fingerprint) == 16 and subkey.fpr.endswith(fingerprint):
+                return True
+        return False
 
 
 @implementer(IPymeUserId)

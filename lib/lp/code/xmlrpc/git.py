@@ -350,12 +350,15 @@ class GitAPI(LaunchpadXMLRPCView):
             permissions.append('force_push')
         return permissions
 
+    @return_fault
     def _checkRefPermissions(self, requester, translated_path, ref_paths,
                              auth_params):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
+        if repository is None:
+            raise faults.GitRepositoryNotFound(translated_path)
 
         macaroon_raw = auth_params.get("macaroon")
         if (macaroon_raw is not None and
@@ -391,7 +394,7 @@ class GitAPI(LaunchpadXMLRPCView):
                 }
 
     def checkRefPermissions(self, translated_path, ref_paths, auth_params):
-        """ See `IGitAPI`"""
+        """See `IGitAPI`."""
         requester_id = auth_params.get("uid")
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
