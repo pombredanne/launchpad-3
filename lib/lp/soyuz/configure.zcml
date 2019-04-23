@@ -483,6 +483,15 @@
         <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
     </securedutility>
 
+    <!-- BinaryPackageBuildMacaroonIssuer -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuildMacaroonIssuer"
+        provides="lp.services.macaroons.interfaces.IMacaroonIssuer"
+        name="binary-package-build">
+        <allow interface="lp.services.macaroons.interfaces.IMacaroonIssuerPublic"/>
+    </securedutility>
+
     <!-- DistroArchSeriesBinaryPackage -->
 
     <class

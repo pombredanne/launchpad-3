@@ -819,8 +819,8 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
             "[codehosting]",
             "git_browse_root: %s" % self.target_git_server.get_url(""),
             "",
-            "[codeimport]",
-            "macaroon_secret_key: some-secret",
+            "[launchpad]",
+            "internal_macaroon_secret_key: some-secret",
             ]
         config_fixture.add_section("\n" + "\n".join(setting_lines))
         self.useFixture(ConfigUseFixture(config_name))

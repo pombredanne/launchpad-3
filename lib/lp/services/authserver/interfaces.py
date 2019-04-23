@@ -27,10 +27,12 @@ class IAuthServer(Interface):
             person with the given name.
         """
 
-    def verifyMacaroon(macaroon_raw, context):
+    def verifyMacaroon(macaroon_raw, context_type, context):
         """Verify that `macaroon_raw` grants access to `context`.
 
         :param macaroon_raw: A serialised macaroon.
+        :param context_type: A string identifying the type of context to
+            check.  Currently only 'LibraryFileAlias' is supported.
         :param context: The context to check.  Note that this is passed over
             XML-RPC, so it should be plain data (e.g. an ID) rather than a
             database object.
