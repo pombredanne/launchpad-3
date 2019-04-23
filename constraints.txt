@@ -355,7 +355,7 @@ snowballstemmer==1.2.1
 soupmatchers==0.4
 sphinxcontrib-websupport==1.0.1
 # lp:~launchpad-committers/storm/lp
-storm==0.20.0.99-lp-r410
+storm==0.20.0.99-lp-r411
 subprocess32==3.2.6
 subvertpy==0.9.1
 testresources==0.2.7
