@@ -72,7 +72,9 @@ class FakeAuthServer(xmlrpc.XMLRPC):
     def registerMacaroon(self, macaroon, context):
         self.macaroons.add((macaroon.serialize(), context))
 
-    def xmlrpc_verifyMacaroon(self, macaroon_raw, context):
+    def xmlrpc_verifyMacaroon(self, macaroon_raw, context_type, context):
+        if context_type != 'LibraryFileAlias':
+            return faults.Unauthorized()
         if (macaroon_raw, context) in self.macaroons:
             return True
         else:

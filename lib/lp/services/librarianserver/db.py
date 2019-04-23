@@ -71,7 +71,8 @@ class Library:
         try:
             yield cancel_on_timeout(
                 self._authserver.callRemote(
-                    "verifyMacaroon", macaroon.serialize(), aliasid),
+                    "verifyMacaroon", macaroon.serialize(), "LibraryFileAlias",
+                    aliasid),
                 config.librarian.authentication_timeout)
             defer.returnValue(True)
         except Fault as fault:

@@ -132,7 +132,7 @@ class VerifyMacaroonTests(TestCase):
     def test_nonsense_macaroon(self):
         self.assertEqual(
             faults.Unauthorized(),
-            self.authserver.verifyMacaroon('nonsense', 1))
+            self.authserver.verifyMacaroon('nonsense', 'LibraryFileAlias', 1))
 
     def test_unknown_issuer(self):
         macaroon = Macaroon(
@@ -140,14 +140,24 @@ class VerifyMacaroonTests(TestCase):
             identifier='unknown-issuer', key='test')
         self.assertEqual(
             faults.Unauthorized(),
-            self.authserver.verifyMacaroon(macaroon.serialize(), 1))
+            self.authserver.verifyMacaroon(
+                macaroon.serialize(), 'LibraryFileAlias', 1))
+
+    def test_wrong_context_type(self):
+        lfa = getUtility(ILibraryFileAliasSet)[1]
+        macaroon = self.issuer.issueMacaroon(lfa)
+        self.assertEqual(
+            faults.Unauthorized(),
+            self.authserver.verifyMacaroon(
+                macaroon.serialize(), 'nonsense', lfa.id))
 
     def test_wrong_context(self):
         lfa = getUtility(ILibraryFileAliasSet)[1]
         macaroon = self.issuer.issueMacaroon(lfa)
         self.assertEqual(
             faults.Unauthorized(),
-            self.authserver.verifyMacaroon(macaroon.serialize(), 2))
+            self.authserver.verifyMacaroon(
+                macaroon.serialize(), 'LibraryFileAlias', 2))
 
     def test_nonexistent_lfa(self):
         macaroon = self.issuer.issueMacaroon(
@@ -159,11 +169,13 @@ class VerifyMacaroonTests(TestCase):
             lfa_id)
         self.assertEqual(
             faults.Unauthorized(),
-            self.authserver.verifyMacaroon(macaroon.serialize(), lfa_id))
+            self.authserver.verifyMacaroon(
+                macaroon.serialize(), 'LibraryFileAlias', lfa_id))
 
     def test_success(self):
         lfa = getUtility(ILibraryFileAliasSet)[1]
         macaroon = self.issuer.issueMacaroon(lfa)
         self.assertThat(
-            self.authserver.verifyMacaroon(macaroon.serialize(), lfa.id),
+            self.authserver.verifyMacaroon(
+                macaroon.serialize(), 'LibraryFileAlias', lfa.id),
             Is(True))

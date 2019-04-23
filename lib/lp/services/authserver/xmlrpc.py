@@ -45,7 +45,7 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
                      for key in person.sshkeys],
             }
 
-    def verifyMacaroon(self, macaroon_raw, context):
+    def verifyMacaroon(self, macaroon_raw, context_type, context):
         """See `IAuthServer.verifyMacaroon`."""
         try:
             macaroon = Macaroon.deserialize(macaroon_raw)
@@ -57,12 +57,15 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
             issuer = getUtility(IMacaroonIssuer, macaroon.identifier)
         except ComponentLookupError:
             return faults.Unauthorized()
-        # The context is a `LibraryFileAlias` ID, since we can't pass
-        # general objects over the XML-RPC interface.  Look it up so that we
-        # can verify it.
-        try:
-            lfa = getUtility(ILibraryFileAliasSet)[context]
-        except SQLObjectNotFound:
+        # The context is plain data, since we can't pass general objects over
+        # the XML-RPC interface.  Look it up so that we can verify it.
+        if context_type == 'LibraryFileAlias':
+            # The context is a `LibraryFileAlias` ID.
+            try:
+                lfa = getUtility(ILibraryFileAliasSet)[context]
+            except SQLObjectNotFound:
+                return faults.Unauthorized()
+        else:
             return faults.Unauthorized()
         if not issuer.verifyMacaroon(macaroon, lfa):
             return faults.Unauthorized()
