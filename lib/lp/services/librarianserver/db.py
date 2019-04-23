@@ -98,16 +98,6 @@ class Library:
         if token and path:
             # With a token and a path we may be able to serve restricted files
             # on the public port.
-            #
-            # The URL-encoding of the path may have changed somewhere
-            # along the line, so reencode it canonically. LFA.filename
-            # can't contain slashes, so they're safe to leave unencoded.
-            # And urllib.quote erroneously excludes ~ from its safe set,
-            # while RFC 3986 says it should be unescaped and Chromium
-            # forcibly decodes it in any URL that it sees.
-            #
-            # This needs to match url_path_quote.
-            normalised_path = urllib.quote(urllib.unquote(path), safe='/~+')
             if isinstance(token, Macaroon):
                 # Macaroons have enough other constraints that they don't
                 # need to be path-specific; it's simpler and faster to just
@@ -115,6 +105,16 @@ class Library:
                 token_ok = threads.blockingCallFromThread(
                     default_reactor, self._verifyMacaroon, token, aliasid)
             else:
+                # The URL-encoding of the path may have changed somewhere
+                # along the line, so reencode it canonically. LFA.filename
+                # can't contain slashes, so they're safe to leave unencoded.
+                # And urllib.quote erroneously excludes ~ from its safe set,
+                # while RFC 3986 says it should be unescaped and Chromium
+                # forcibly decodes it in any URL that it sees.
+                #
+                # This needs to match url_path_quote.
+                normalised_path = urllib.quote(
+                    urllib.unquote(path), safe='/~+')
                 store = session_store()
                 token_ok = not store.find(TimeLimitedToken,
                     SQL("age(created) < interval '1 day'"),
