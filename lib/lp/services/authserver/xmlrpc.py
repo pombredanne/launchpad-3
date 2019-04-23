@@ -47,6 +47,8 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
         """See `IAuthServer.verifyMacaroon`."""
         try:
             macaroon = Macaroon.deserialize(macaroon_raw)
+        # XXX cjwatson 2019-04-23: Restrict exceptions once
+        # https://github.com/ecordell/pymacaroons/issues/50 is fixed.
         except Exception:
             return faults.Unauthorized()
         try:
