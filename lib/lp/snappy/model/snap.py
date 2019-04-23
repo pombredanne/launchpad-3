@@ -1281,6 +1281,7 @@ class SnapSet:
         try:
             paths = (
                 "snap/snapcraft.yaml",
+                "build-aux/snap/snapcraft.yaml",
                 "snapcraft.yaml",
                 ".snapcraft.yaml",
                 )
