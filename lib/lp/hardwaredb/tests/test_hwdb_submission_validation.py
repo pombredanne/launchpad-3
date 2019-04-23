@@ -3,6 +3,8 @@
 
 """Tests of the HWDB submissions parser."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 from datetime import datetime
 import logging
 import os
@@ -36,6 +38,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
             'tests', 'hardwaretest.xml')
         self.sample_data = open(sample_data_path).read()
+        if isinstance(self.sample_data, bytes):
+            self.sample_data = self.sample_data.decode('UTF-8')
 
     def runValidator(self, sample_data):
         """Run the Relax NG validator.
@@ -44,6 +48,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         expected in a test is indeed created by this test.
         """
         self.submission_count += 1
+        if not isinstance(sample_data, bytes):
+            sample_data = sample_data.encode('UTF-8')
         submission_id = 'submission_%i' % self.submission_count
         result = SubmissionParser(self.log)._getValidatedEtree(sample_data,
                                                                submission_id)
@@ -165,7 +171,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             data=self.sample_data,
             replace_text='<?xml version="1.0" encoding="%s"?>' % encoding,
             from_text='<?xml',
-            to_text='?>')
+            to_text='?>').encode(encoding)
 
     def testAsciiEncoding(self):
         """Validation of ASCII encoded XML data.
@@ -182,8 +188,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.replaceSampledata(
             data=sample_data_ascii_encoded,
             replace_text=tag_with_umlaut,
-            from_text='<architecture',
-            to_text='/>')
+            from_text=b'<architecture',
+            to_text=b'/>')
         result, submission_id = self.runValidator(sample_data)
         self.assertEqual(result, None,
                          'Invalid submission with ASCII encoding accepted')
@@ -196,12 +202,12 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def testISO8859_1_Encoding(self):
         """XML data with ISO-8859-1 may have bytes with bit 7 set."""
         sample_data_iso_8859_1_encoded = self._setEncoding('ISO-8859-1')
-        tag_with_umlaut = '<architecture value="\xc4"/>'
+        tag_with_umlaut = b'<architecture value="\xc4"/>'
         sample_data = self.replaceSampledata(
             data=sample_data_iso_8859_1_encoded,
             replace_text=tag_with_umlaut,
-            from_text='<architecture',
-            to_text='/>')
+            from_text=b'<architecture',
+            to_text=b'/>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(result, None,
                             'Valid submission with ISO-8859-1 encoding '
@@ -211,24 +217,24 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """UTF-8 encoded data is properly detected and parsed."""
         sample_data_utf8_encoded = self._setEncoding('UTF-8')
         umlaut = u'\xc4'.encode('utf8')
-        tag = '<architecture value="%s"/>'
+        tag = b'<architecture value="%s"/>'
         tag_with_valid_utf8 = tag % umlaut
         sample_data = self.replaceSampledata(
             data=sample_data_utf8_encoded,
             replace_text=tag_with_valid_utf8,
-            from_text='<architecture',
-            to_text='/>')
+            from_text=b'<architecture',
+            to_text=b'/>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(result, None,
                             'Valid submission with UTF-8 encoding rejected')
 
         # Broken UTF8 encoding is detected.
-        tag_with_broken_utf8 = tag % umlaut[0]
+        tag_with_broken_utf8 = tag % umlaut[:1]
         sample_data = self.replaceSampledata(
             data=tag_with_broken_utf8,
             replace_text=tag_with_broken_utf8,
-            from_text='<architecture',
-            to_text='/>')
+            from_text=b'<architecture',
+            to_text=b'/>')
         result, submission_id = self.runValidator(sample_data)
         self.assertEqual(result, None,
                          'Invalid submissison with UTF-8 encoding accepted')

@@ -5,6 +5,8 @@
 Run the doctests and pagetests.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import os
 
 from lp.services.testing import build_test_suite
@@ -13,6 +15,7 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.testing.pages import setUpGlobs
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -24,7 +27,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 
 def hwdbDeviceTablesSetup(test):
-    setUp(test)
+    setUp(test, future=True)
     switch_dbuser('hwdb-submission-processor')
 
 
@@ -38,4 +41,7 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special, layer=LaunchpadFunctionalLayer)
+    return build_test_suite(
+        here, special, layer=LaunchpadFunctionalLayer,
+        setUp=lambda test: setUp(test, future=True),
+        pageTestsSetUp=lambda test: setUpGlobs(test, future=True))
