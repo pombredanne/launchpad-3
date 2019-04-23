@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Auth-Server XML-RPC API ."""
@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from pymacaroons import Macaroon
+from storm.sqlobject import SQLObjectNotFound
 from zope.component import (
     ComponentLookupError,
     getUtility,
@@ -22,6 +23,7 @@ from lp.services.authserver.interfaces import (
     IAuthServer,
     IAuthServerApplication,
     )
+from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.xmlrpc import faults
@@ -55,7 +57,14 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
             issuer = getUtility(IMacaroonIssuer, macaroon.identifier)
         except ComponentLookupError:
             return faults.Unauthorized()
-        if not issuer.verifyMacaroon(macaroon, context):
+        # The context is a `LibraryFileAlias` ID, since we can't pass
+        # general objects over the XML-RPC interface.  Look it up so that we
+        # can verify it.
+        try:
+            lfa = getUtility(ILibraryFileAliasSet)[context]
+        except SQLObjectNotFound:
+            return faults.Unauthorized()
+        if not issuer.verifyMacaroon(macaroon, lfa):
             return faults.Unauthorized()
         return True
 

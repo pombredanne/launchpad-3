@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -9,6 +9,7 @@ from pymacaroons import (
     Macaroon,
     Verifier,
     )
+from storm.sqlobject import SQLObjectNotFound
 from testtools.matchers import Is
 from zope.component import getUtility
 from zope.interface import implementer
@@ -16,6 +17,10 @@ from zope.publisher.xmlrpc import TestRequest
 
 from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.services.config import config
+from lp.services.librarian.interfaces import (
+    ILibraryFileAlias,
+    ILibraryFileAliasSet,
+    )
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.testing import (
     person_logged_in,
@@ -25,7 +30,7 @@ from lp.testing import (
 from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
-    ZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.xmlrpc import faults
 from lp.xmlrpc.interfaces import IPrivateApplication
@@ -82,7 +87,7 @@ class DummyMacaroonIssuer:
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, identifier='test',
             key=self._root_secret)
-        macaroon.add_first_party_caveat('test %s' % context)
+        macaroon.add_first_party_caveat('test %s' % context.id)
         return macaroon
 
     def checkMacaroonIssuer(self, macaroon):
@@ -99,11 +104,13 @@ class DummyMacaroonIssuer:
 
     def verifyMacaroon(self, macaroon, context):
         """See `IMacaroonIssuer`."""
+        if not ILibraryFileAlias.providedBy(context):
+            return False
         if not self.checkMacaroonIssuer(macaroon):
             return False
         try:
             verifier = Verifier()
-            verifier.satisfy_exact('test %s' % context)
+            verifier.satisfy_exact('test %s' % context.id)
             return verifier.verify(macaroon, self._root_secret)
         except Exception:
             return False
@@ -111,7 +118,7 @@ class DummyMacaroonIssuer:
 
 class VerifyMacaroonTests(TestCase):
 
-    layer = ZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(VerifyMacaroonTests, self).setUp()
@@ -125,7 +132,7 @@ class VerifyMacaroonTests(TestCase):
     def test_nonsense_macaroon(self):
         self.assertEqual(
             faults.Unauthorized(),
-            self.authserver.verifyMacaroon('nonsense', 0))
+            self.authserver.verifyMacaroon('nonsense', 1))
 
     def test_unknown_issuer(self):
         macaroon = Macaroon(
@@ -133,15 +140,30 @@ class VerifyMacaroonTests(TestCase):
             identifier='unknown-issuer', key='test')
         self.assertEqual(
             faults.Unauthorized(),
-            self.authserver.verifyMacaroon(macaroon.serialize(), 0))
-
-    def test_wrong_context(self):
-        macaroon = self.issuer.issueMacaroon(0)
-        self.assertEqual(
-            faults.Unauthorized(),
             self.authserver.verifyMacaroon(macaroon.serialize(), 1))
 
+    def test_wrong_context(self):
+        lfa = getUtility(ILibraryFileAliasSet)[1]
+        macaroon = self.issuer.issueMacaroon(lfa)
+        self.assertEqual(
+            faults.Unauthorized(),
+            self.authserver.verifyMacaroon(macaroon.serialize(), 2))
+
+    def test_nonexistent_lfa(self):
+        macaroon = self.issuer.issueMacaroon(
+            getUtility(ILibraryFileAliasSet)[1])
+        # Pick a large ID that doesn't exist in sampledata.
+        lfa_id = 1000000
+        self.assertRaises(
+            SQLObjectNotFound, getUtility(ILibraryFileAliasSet).__getitem__,
+            lfa_id)
+        self.assertEqual(
+            faults.Unauthorized(),
+            self.authserver.verifyMacaroon(macaroon.serialize(), lfa_id))
+
     def test_success(self):
-        macaroon = self.issuer.issueMacaroon(0)
+        lfa = getUtility(ILibraryFileAliasSet)[1]
+        macaroon = self.issuer.issueMacaroon(lfa)
         self.assertThat(
-            self.authserver.verifyMacaroon(macaroon.serialize(), 0), Is(True))
+            self.authserver.verifyMacaroon(macaroon.serialize(), lfa.id),
+            Is(True))

@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -81,6 +81,7 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -1412,7 +1413,7 @@ class BinaryPackageBuildMacaroonIssuer:
     def verifyMacaroon(self, macaroon, context):
         """See `IMacaroonIssuer`.
 
-        For verification, the context is a `LibraryFileAlias` ID.  We check
+        For verification, the context is a `LibraryFileAlias`.  We check
         that the file is one of those required to build the
         `IBinaryPackageBuild` that is the context of the macaroon, and that
         the context build is currently building.
@@ -1420,7 +1421,7 @@ class BinaryPackageBuildMacaroonIssuer:
         # Circular import.
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
-        if not isinstance(context, int):
+        if not ILibraryFileAlias.providedBy(context):
             return False
         if not self.checkMacaroonIssuer(macaroon):
             return False
@@ -1440,7 +1441,7 @@ class BinaryPackageBuildMacaroonIssuer:
                     SourcePackageRelease.id,
                 SourcePackageReleaseFile.sourcepackagereleaseID ==
                     SourcePackageRelease.id,
-                SourcePackageReleaseFile.libraryfileID == context,
+                SourcePackageReleaseFile.libraryfile == context,
                 BinaryPackageBuild.status == BuildStatus.BUILDING).is_empty()
 
         try:
