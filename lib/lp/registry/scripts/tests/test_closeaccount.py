@@ -470,3 +470,15 @@ class TestCloseAccount(TestCaseWithFactory):
         self.assertThat(bug.getNominations(), MatchesSetwise(
             MatchesStructure.byEquality(owner=person),
             MatchesStructure.byEquality(owner=other_person)))
+
+    def test_skips_inactive_product_owner(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=person)
+        product.active = False
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual(person, product.owner)
