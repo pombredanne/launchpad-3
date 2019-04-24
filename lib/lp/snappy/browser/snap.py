@@ -635,6 +635,28 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
             self.widgets['store_channels'].context.required = store_upload
         super(BaseSnapEditView, self).validate_widgets(data, names=names)
 
+    def validate(self, data):
+        super(BaseSnapEditView, self).validate(data)
+        if data.get('private', self.context.private) is False:
+            if 'private' in data or 'owner' in data:
+                owner = data.get('owner', self.context.owner)
+                if owner is not None and owner.private:
+                    self.setFieldError(
+                        'private' if 'private' in data else 'owner',
+                        u'A public snap cannot have a private owner.')
+            if 'private' in data or 'branch' in data:
+                branch = data.get('branch', self.context.branch)
+                if branch is not None and branch.private:
+                    self.setFieldError(
+                        'private' if 'private' in data else 'branch',
+                        u'A public snap cannot have a private branch.')
+            if 'private' in data or 'git_ref' in data:
+                ref = data.get('git_ref', self.context.git_ref)
+                if ref is not None and ref.private:
+                    self.setFieldError(
+                        'private' if 'private' in data else 'git_ref',
+                        u'A public snap cannot have a private repository.')
+
     def _needStoreReauth(self, data):
         """Does this change require reauthorizing to the store?"""
         store_upload = data.get('store_upload', False)
@@ -703,16 +725,13 @@ class SnapAdminView(BaseSnapEditView):
 
     def validate(self, data):
         super(SnapAdminView, self).validate(data)
-        private = data.get('private', None)
-        if private is not None:
-            if not getUtility(ISnapSet).isValidPrivacy(
-                    private, self.context.owner, self.context.branch,
-                    self.context.git_ref):
+        # BaseSnapEditView.validate checks the rules for 'private' in
+        # combination with other attributes.
+        if data.get('private', None) is True:
+            if not getFeatureFlag(SNAP_PRIVATE_FEATURE_FLAG):
                 self.setFieldError(
                     'private',
-                    u'This snap contains private information and cannot '
-                    u'be public.'
-                )
+                    u'You do not have permission to create private snaps.')
 
 
 class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):

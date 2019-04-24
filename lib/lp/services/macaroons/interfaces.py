@@ -7,11 +7,22 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'BadMacaroonContext',
     'IMacaroonIssuer',
     ]
 
 from zope.interface import Interface
 from zope.schema import Bool
+
+
+class BadMacaroonContext(Exception):
+    """The requested context is unsuitable."""
+
+    def __init__(self, context, message=None):
+        if message is None:
+            message = "Cannot handle context %r." % context
+        super(BadMacaroonContext, self).__init__(message)
+        self.context = context
 
 
 class IMacaroonIssuerPublic(Interface):

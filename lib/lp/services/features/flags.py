@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -169,13 +169,6 @@ flag_info = sorted([
       'series).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all products.'),
      'None are enabled',
-     '',
-     ''),
-    ('longpoll.merge_proposals.enabled',
-     'boolean',
-     ('Enables the longpoll mechanism for merge proposals so that diffs, '
-      'for example, are updated in-page when they are ready.'),
-     '',
      '',
      ''),
     ('ajax.batch_navigator.enabled',

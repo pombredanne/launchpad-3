@@ -10,10 +10,12 @@ import os
 
 from lp.archiveuploader.uploadpolicy import findPolicyByName
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.services.config import config
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
+from lp.services.timeout import default_timeout
 
 
 class ProcessUpload(LaunchpadCronScript):
@@ -92,7 +94,8 @@ class ProcessUpload(LaunchpadCronScript):
         processor = UploadProcessor(self.options.base_fsroot,
             self.options.dryrun, self.options.nomails, self.options.builds,
             self.options.keep, getPolicy, self.txn, self.logger)
-        processor.processUploadQueue(self.options.leafname)
+        with default_timeout(config.uploader.timeout):
+            processor.processUploadQueue(self.options.leafname)
 
     @property
     def lockfilename(self):

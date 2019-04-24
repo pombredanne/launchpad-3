@@ -288,6 +288,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         if (verify_policy
             and information_type not in self.getAllowedInformationTypes(who)):
             raise CannotChangeInformationType("Forbidden by project policy.")
+        # XXX cjwatson 2019-03-29: Check privacy rules on snaps that use
+        # this branch.
         self.information_type = information_type
         self._reconcileAccess()
         if information_type in PRIVATE_INFORMATION_TYPES and self.subscribers:
@@ -866,7 +868,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
     def code_import(self):
         return getUtility(ICodeImportSet).getByBranch(self)
 
-    def _deletionRequirements(self):
+    def _deletionRequirements(self, eager_load=False):
         """Determine what operations must be performed to delete this branch.
 
         Two dictionaries are returned, one for items that must be deleted,
@@ -916,20 +918,21 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
+        recipes = self.recipes if eager_load else self._recipes
         deletion_operations.extend(
             DeletionCallable(
                 recipe, _('This recipe uses this branch.'), recipe.destroySelf)
-            for recipe in self.recipes)
+            for recipe in recipes)
         if not getUtility(ISnapSet).findByBranch(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, _('Some snap packages build from this branch.'),
                 getUtility(ISnapSet).detachFromBranch, self))
         return (alteration_operations, deletion_operations)
 
-    def deletionRequirements(self):
+    def deletionRequirements(self, eager_load=False):
         """See `IBranch`."""
         alteration_operations, deletion_operations, = (
-            self._deletionRequirements())
+            self._deletionRequirements(eager_load=eager_load))
         result = dict(
             (operation.affected_object, ('alter', operation.rationale)) for
             operation in alteration_operations)
@@ -1297,6 +1300,10 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             job = BranchScanJob.create(self)
             job.celeryRunOnCommit()
         return (self.last_mirrored_id, old_scanned_id)
+
+    def rescan(self):
+        """See `IBranchModerate`."""
+        self.unscan(rescan=True)
 
     def getLatestScanJob(self):
         from lp.code.model.branchjob import BranchJob, BranchScanJob

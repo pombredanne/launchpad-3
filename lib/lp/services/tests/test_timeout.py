@@ -1,4 +1,4 @@
-# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """timeout.py tests.
@@ -370,8 +370,6 @@ class TestTimeout(TestCase):
     def test_urlfetch_no_proxy_by_default(self):
         """urlfetch does not use a proxy by default."""
         self.pushConfig('launchpad', http_proxy='http://proxy.example:3128/')
-        set_default_timeout_function(lambda: 1)
-        self.addCleanup(set_default_timeout_function, None)
         fake_send = FakeMethod(result=Response())
         self.useFixture(
             MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
@@ -382,8 +380,6 @@ class TestTimeout(TestCase):
         """urlfetch uses proxies if explicitly requested."""
         proxy = 'http://proxy.example:3128/'
         self.pushConfig('launchpad', http_proxy=proxy)
-        set_default_timeout_function(lambda: 1)
-        self.addCleanup(set_default_timeout_function, None)
         fake_send = FakeMethod(result=Response())
         self.useFixture(
             MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
@@ -394,8 +390,6 @@ class TestTimeout(TestCase):
 
     def test_urlfetch_does_not_support_ftp_urls_by_default(self):
         """urlfetch() does not support ftp urls by default."""
-        set_default_timeout_function(lambda: 1)
-        self.addCleanup(set_default_timeout_function, None)
         url = 'ftp://localhost/'
         e = self.assertRaises(InvalidSchema, urlfetch, url)
         self.assertEqual(
@@ -420,8 +414,6 @@ class TestTimeout(TestCase):
         self.pushConfig('launchpad', http_proxy=http_server_url)
         t = threading.Thread(target=success_result)
         t.start()
-        set_default_timeout_function(lambda: 1)
-        self.addCleanup(set_default_timeout_function, None)
         response = urlfetch(
             'ftp://example.com/', use_proxy=True, allow_ftp=True)
         self.assertThat(response, MatchesStructure(
@@ -432,8 +424,6 @@ class TestTimeout(TestCase):
 
     def test_urlfetch_does_not_support_file_urls_by_default(self):
         """urlfetch() does not support file urls by default."""
-        set_default_timeout_function(lambda: 1)
-        self.addCleanup(set_default_timeout_function, None)
         test_path = self.useFixture(TempDir()).join('file')
         write_file(test_path, '')
         url = 'file://' + test_path
@@ -443,8 +433,6 @@ class TestTimeout(TestCase):
 
     def test_urlfetch_supports_file_urls_if_allow_file(self):
         """urlfetch() supports file urls if explicitly asked to do so."""
-        set_default_timeout_function(lambda: 1)
-        self.addCleanup(set_default_timeout_function, None)
         test_path = self.useFixture(TempDir()).join('file')
         write_file(test_path, 'Success.')
         url = 'file://' + test_path

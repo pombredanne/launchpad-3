@@ -61,7 +61,10 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.interfaces.client import ILibrarianClient
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -1289,7 +1292,7 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         job = self.makeJob(target_rcs_type=TargetRevisionControlSystems.BZR)
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         self.assertRaises(
-            ValueError, removeSecurityProxy(issuer).issueMacaroon, job)
+            BadMacaroonContext, removeSecurityProxy(issuer).issueMacaroon, job)
 
     def test_issueMacaroon_good(self):
         job = self.makeJob()

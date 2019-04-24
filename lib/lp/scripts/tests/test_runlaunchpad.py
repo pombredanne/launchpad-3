@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for runlaunchpad.py"""
@@ -155,10 +155,6 @@ class ServersToStart(testtools.TestCase):
         # RabbitMQ may or may not be asked to run.
         if config.rabbitmq.launch:
             expected.append(SERVICES['rabbitmq'])
-
-        # TxLongPoll may or may not be asked to run.
-        if config.txlongpoll.launch:
-            expected.append(SERVICES['txlongpoll'])
 
         expected = sorted(expected)
         self.assertEqual(expected, services)
