@@ -43,13 +43,13 @@ class MacaroonIssuerBase:
         """Check that the issuing context is suitable.
 
         Concrete implementations may implement this method to check that the
-        context of a macaroon issuance is suitable.  The returned
-        context is passed to individual caveat checkers, and may be the same
-        context that was passed in or an adapted one.
+        context of a macaroon issuance is suitable.  The returned context is
+        used to create the primary caveat, and may be the same context that
+        was passed in or an adapted one.
 
         :param context: The context to check.
         :raises ValueError: if the context is unsuitable.
-        :return: The context to pass to individual caveat checkers.
+        :return: The context to use to create the primary caveat.
         """
         return context
 
