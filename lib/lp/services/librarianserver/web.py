@@ -131,6 +131,8 @@ class LibraryFileAliasResource(resource.Resource):
             if not request.getUser() and request.getPassword():
                 try:
                     token = Macaroon.deserialize(request.getPassword())
+                # XXX cjwatson 2019-04-23: Restrict exceptions once
+                # https://github.com/ecordell/pymacaroons/issues/50 is fixed.
                 except Exception:
                     pass
         path = request.path

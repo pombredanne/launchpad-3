@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import with_statement
@@ -19,7 +19,7 @@ import smtplib
 from urllib import urlopen
 import uuid
 
-from amqplib import client_0_8 as amqp
+import amqp
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
@@ -277,8 +277,8 @@ class BaseTestCase(testtools.TestCase):
                 host=rabbitmq.host,
                 userid=rabbitmq.userid,
                 password=rabbitmq.password,
-                virtual_host=rabbitmq.virtual_host,
-                insist=False)
+                virtual_host=rabbitmq.virtual_host)
+            conn.connect()
             conn.close()
 
 

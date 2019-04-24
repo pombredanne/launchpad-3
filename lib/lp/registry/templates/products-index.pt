@@ -131,14 +131,16 @@
 
       <div class="portlet">
         <h2>Latest projects registered</h2>
-        <table>
-          <tr tal:repeat="product view/latest">
-            <td>
-              <tal:link replace="structure product/fmt:link" />
-              registered
-              <tal:date replace="product/datecreated/fmt:displaydate" />
-            </td>
-          </tr>
+        <table id="latest-registered">
+          <tal:product repeat="product view/latest">
+            <tr tal:condition="product/required:launchpad.View">
+              <td>
+                <tal:link replace="structure product/fmt:link" />
+                registered
+                <tal:date replace="product/datecreated/fmt:displaydate" />
+              </td>
+            </tr>
+          </tal:product>
         </table>
         <p><a href="/projects/+all">&raquo; Show all projects</a></p>
       </div>

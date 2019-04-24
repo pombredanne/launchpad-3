@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposals."""
@@ -74,6 +74,8 @@ from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     )
+from lp.code.interfaces.branchjob import IBranchScanJobSource
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
@@ -1576,26 +1578,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             git_api.notify(bmp.source_git_repository.getInternalPath()))
         self.assertTrue(view.pending_diff)
 
-    def test_subscribe_to_merge_proposal_events_flag_disabled(self):
-        # If the longpoll.merge_proposals.enabled flag is not enabled the user
-        # is *not* subscribed to events relating to the merge proposal.
-        bmp = self.factory.makeBranchMergeProposal()
-        view = create_initialized_view(bmp, '+index', current_request=True)
-        cache = IJSONRequestCache(view.request)
-        self.assertNotIn("longpoll", cache.objects)
-        self.assertNotIn("merge_proposal_event_key", cache.objects)
-
-    def test_subscribe_to_merge_proposal_events_flag_enabled(self):
-        # If the longpoll.merge_proposals.enabled flag is enabled the user is
-        # subscribed to events relating to the merge proposal.
-        bmp = self.factory.makeBranchMergeProposal()
-        self.useContext(feature_flags())
-        set_feature_flag('longpoll.merge_proposals.enabled', 'enabled')
-        view = create_initialized_view(bmp, '+index', current_request=True)
-        cache = IJSONRequestCache(view.request)
-        self.assertIn("longpoll", cache.objects)
-        self.assertIn("merge_proposal_event_key", cache.objects)
-
     def test_description_is_meta_description(self):
         description = (
             "I'd like to make the bmp description appear as the meta "
@@ -2076,20 +2058,6 @@ class TestBranchMergeProposal(BrowserTestCase):
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
 
-    def test_pending_diff_message_with_longpoll_enabled(self):
-        # If the longpoll feature flag is enabled then the message
-        # displayed for a pending diff indicates that it'll update
-        # automatically. See also
-        # lib/lp/code/stories/branches/xx-branchmergeproposals.txt
-        self.useContext(feature_flags())
-        set_feature_flag('longpoll.merge_proposals.enabled', 'enabled')
-        bmp = self.factory.makeBranchMergeProposal()
-        browser = self.getViewBrowser(bmp)
-        self.assertIn(
-            "An updated diff is being calculated and will appear "
-                "automatically when ready.",
-            browser.contents)
-
     def test_short_conversation_comments_not_truncated(self):
         """Short comments should not be truncated."""
         comment = self.factory.makeCodeReviewComment(body='x y' * 100)
@@ -2176,6 +2144,95 @@ class TestBranchMergeProposal(BrowserTestCase):
         view = create_initialized_view(bmp, '+index')
         result = view.show_diff_update_link
         self.assertTrue(result)
+
+    def test_show_rescan_link_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = getUtility(IGitRefScanJobSource).create(
+            bmp.target_git_repository)
+        removeSecurityProxy(target_job).job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        self.assertTrue(view.show_rescan_link)
+
+    def test_show_rescan_link_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        target_job = getUtility(IBranchScanJobSource).create(
+            bmp.target_branch)
+        removeSecurityProxy(target_job).job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        self.assertTrue(view.show_rescan_link)
+
+    def test_show_rescan_link_both_failed(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = getUtility(IGitRefScanJobSource).create(
+            bmp.target_git_repository)
+        removeSecurityProxy(target_job).job._status = JobStatus.FAILED
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        self.assertTrue(view.show_rescan_link)
+
+    def test_show_rescan_link_latest_didnt_fail(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        target_job = getUtility(IGitRefScanJobSource).create(
+            bmp.target_git_repository)
+        removeSecurityProxy(target_job).job._status = JobStatus.COMPLETED
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.COMPLETED
+        view = create_initialized_view(bmp, '+index')
+        self.assertFalse(view.show_rescan_link)
+
+
+class TestBranchMergeProposalRescanView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_rescan_with_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        source_job = getUtility(IGitRefScanJobSource).create(
+            bmp.source_git_repository)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+
+        with person_logged_in(bmp.merge_source.owner):
+            request = LaunchpadTestRequest(
+                method='POST',
+                form={
+                    'field.actions.rescan': 'Rescan',
+                    })
+            request.setPrincipal(bmp.merge_source.owner)
+            view = create_initialized_view(
+                bmp,
+                name='+rescan',
+                request=request)
+
+        self.assertEqual(
+            'Rescan scheduled',
+            view.request.response.notifications[0].message
+        )
+
+    def test_rescan_with_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        source_job = getUtility(IBranchScanJobSource).create(
+            bmp.source_branch)
+        removeSecurityProxy(source_job).job._status = JobStatus.FAILED
+
+        with person_logged_in(bmp.merge_source.owner):
+            request = LaunchpadTestRequest(
+                method='POST',
+                form={
+                    'field.actions.rescan': 'Rescan',
+                    })
+            request.setPrincipal(bmp.merge_source.owner)
+            view = create_initialized_view(
+                bmp,
+                name='+rescan',
+                request=request)
+
+        self.assertEqual(
+            'Rescan scheduled',
+            view.request.response.notifications[0].message
+        )
 
 
 class TestLatestProposalsForEachBranchMixin:
