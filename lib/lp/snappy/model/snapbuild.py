@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -35,6 +35,7 @@ from zope.component import getUtility
 from zope.component.interfaces import ObjectEvent
 from zope.event import notify
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
@@ -45,6 +46,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSource
 from lp.buildmaster.model.buildfarmjob import SpecificBuildFarmJobSourceMixin
 from lp.buildmaster.model.packagebuild import PackageBuildMixin
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -65,6 +67,11 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
+from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -584,3 +591,53 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
             SnapBuild, SnapBuild.build_farm_job_id.is_in(
                 bfj.id for bfj in build_farm_jobs))
         return DecoratedResultSet(rows, pre_iter_hook=self.preloadBuildsData)
+
+
+@implementer(IMacaroonIssuer)
+class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
+
+    identifier = "snap-build"
+
+    def checkIssuingContext(self, context):
+        """See `MacaroonIssuerBase`.
+
+        For issuing, the context is an `ISnapBuild` or its ID.
+        """
+        if ISnapBuild.providedBy(context):
+            pass
+        elif isinstance(context, int):
+            context = getUtility(ISnapBuildSet).getByID(context)
+        else:
+            raise BadMacaroonContext(context)
+        if not removeSecurityProxy(context).is_private:
+            raise BadMacaroonContext(
+                context, "Refusing to issue macaroon for public build.")
+        return removeSecurityProxy(context).id
+
+    def checkVerificationContext(self, context):
+        """See `MacaroonIssuerBase`."""
+        if not IGitRepository.providedBy(context):
+            raise BadMacaroonContext(context)
+        return context
+
+    def verifyPrimaryCaveat(self, caveat_value, context):
+        """See `MacaroonIssuerBase`.
+
+        For verification, the context is an `IGitRepository`.  We check that
+        the repository is needed to build the `ISnapBuild` that is the
+        context of the macaroon, and that the context build is currently
+        building.
+        """
+        # Circular import.
+        from lp.snappy.model.snap import Snap
+
+        try:
+            build_id = int(caveat_value)
+        except ValueError:
+            return False
+        return not IStore(SnapBuild).find(
+            SnapBuild,
+            SnapBuild.id == build_id,
+            SnapBuild.snap_id == Snap.id,
+            Snap.git_repository == context,
+            SnapBuild.status == BuildStatus.BUILDING).is_empty()

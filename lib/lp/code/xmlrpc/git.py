@@ -101,9 +101,9 @@ class GitAPI(LaunchpadXMLRPCView):
             job = code_import.import_job
             if job is None:
                 return False
-            return issuer.verifyMacaroon(macaroon, job)
         else:
-            return issuer.checkMacaroonIssuer(macaroon)
+            job = None
+        return issuer.verifyMacaroon(macaroon, job, require_context=False)
 
     def _performLookup(self, requester, path, auth_params):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)

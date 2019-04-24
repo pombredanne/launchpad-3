@@ -83,6 +83,14 @@
         <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource" />
     </securedutility>
 
+    <!-- SnapBuildMacaroonIssuer -->
+    <securedutility
+        class="lp.snappy.model.snapbuild.SnapBuildMacaroonIssuer"
+        provides="lp.services.macaroons.interfaces.IMacaroonIssuer"
+        name="snap-build">
+        <allow interface="lp.services.macaroons.interfaces.IMacaroonIssuerPublic"/>
+    </securedutility>
+
     <!-- SnapBuildBehaviour -->
     <adapter
         for="lp.snappy.interfaces.snapbuild.ISnapBuild"

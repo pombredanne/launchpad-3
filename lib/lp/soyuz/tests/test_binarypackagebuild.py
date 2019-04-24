@@ -29,7 +29,10 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
@@ -920,7 +923,8 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         issuer = getUtility(IMacaroonIssuer, "binary-package-build")
         self.assertRaises(
-            ValueError, removeSecurityProxy(issuer).issueMacaroon, build)
+            BadMacaroonContext, removeSecurityProxy(issuer).issueMacaroon,
+            build)
 
     def test_issueMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -933,26 +937,6 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
             MatchesStructure.byEquality(
                 caveat_id="lp.principal.binary-package-build %s" % build.id),
             ]))
-
-    def test_checkMacaroonIssuer_good(self):
-        build = self.factory.makeBinaryPackageBuild(
-            archive=self.factory.makeArchive(private=True))
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
-        self.assertTrue(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_location(self):
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = Macaroon(
-            location="another-location",
-            key=removeSecurityProxy(issuer)._root_secret)
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_key(self):
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = Macaroon(
-            location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
 
     def test_verifyMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(
