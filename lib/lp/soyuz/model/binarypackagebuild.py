@@ -1376,7 +1376,7 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
     identifier = "binary-package-build"
 
     @property
-    def primary_caveat_name(self):
+    def _primary_caveat_name(self):
         """See `MacaroonIssuerBase`."""
         # The "lp.principal" prefix indicates that this caveat constrains
         # the macaroon to access only resources that should be accessible

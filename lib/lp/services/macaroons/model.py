@@ -27,7 +27,7 @@ class MacaroonIssuerBase:
         raise NotImplementedError
 
     @property
-    def primary_caveat_name(self):
+    def _primary_caveat_name(self):
         """The name of the primary context caveat issued by this issuer."""
         return "lp.%s" % self.identifier
 
@@ -64,7 +64,7 @@ class MacaroonIssuerBase:
             location=config.vhost.mainsite.hostname,
             identifier=self.identifier, key=self._root_secret)
         macaroon.add_first_party_caveat(
-            "%s %s" % (self.primary_caveat_name, context))
+            "%s %s" % (self._primary_caveat_name, context))
         return macaroon
 
     def checkVerificationContext(self, context):
@@ -108,7 +108,7 @@ class MacaroonIssuerBase:
                 caveat_name, caveat_value = caveat.split(" ", 1)
             except ValueError:
                 return False
-            if caveat_name == self.primary_caveat_name:
+            if caveat_name == self._primary_caveat_name:
                 checker = self.verifyPrimaryCaveat
             else:
                 # XXX cjwatson 2019-04-09: For now we just fail closed if
