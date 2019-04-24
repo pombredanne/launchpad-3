@@ -1,4 +1,4 @@
-# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from contextlib import contextmanager
@@ -32,21 +32,20 @@ class TestCeleryWorkerConfiguration(TestCase):
             'branch_write_job', 'branch_write_job_slow',
             'bzrsyncd_job', 'bzrsyncd_job_slow', 'celerybeat',
             'launchpad_job', 'launchpad_job_slow']
-        queues = config['CELERY_QUEUES']
+        queues = config['task_queues']
         self.assertEqual(queue_names, sorted(queues))
         for name in queue_names:
-            self.assertEqual(name, queues[name]['binding_key'])
+            self.assertEqual(name, queues[name]['routing_key'])
 
         # The port changes between test runs.
         self.assertThat(
-            config['BROKER_URL'],
+            config['broker_url'],
             MatchesRegex(r'amqp://guest:guest@localhost:\d+//\Z'))
-        self.assertFalse(config['CELERY_CREATE_MISSING_QUEUES'])
-        self.assertEqual('job', config['CELERY_DEFAULT_EXCHANGE'])
-        self.assertEqual('launchpad_job', config['CELERY_DEFAULT_QUEUE'])
-        self.assertEqual(
-            ('lp.services.job.celeryjob', ), config['CELERY_IMPORTS'])
-        self.assertEqual('amqp', config['CELERY_RESULT_BACKEND'])
+        self.assertFalse(config['task_create_missing_queues'])
+        self.assertEqual('job', config['task_default_exchange'])
+        self.assertEqual('launchpad_job', config['task_default_queue'])
+        self.assertEqual(('lp.services.job.celeryjob', ), config['imports'])
+        self.assertEqual('amqp', config['result_backend'])
 
     def test_app_server_configuration(self):
         from lp.services.job.celeryconfig import configure
@@ -55,10 +54,8 @@ class TestCeleryWorkerConfiguration(TestCase):
 
     def check_job_specific_celery_worker_configuration(self, expected, config):
         self.check_default_common_parameters(config)
-        self.assertEqual(
-            expected['concurrency'], config['CELERYD_CONCURRENCY'])
-        self.assertEqual(
-            expected['timeout'], config['CELERYD_TASK_SOFT_TIME_LIMIT'])
+        self.assertEqual(expected['concurrency'], config['worker_concurrency'])
+        self.assertEqual(expected['timeout'], config['task_soft_time_limit'])
         self.assertEqual(
             expected['fallback'], config.get('FALLBACK', None))
 
@@ -151,9 +148,3 @@ class TestCeleryWorkerConfiguration(TestCase):
         self.assertRaisesWithContent(
             ConfigurationError, error, configure,
             self.command + ['--queue=foo'])
-
-
-class TestCelerydConfiguration(TestCeleryWorkerConfiguration):
-    """Test behaviour with legacy "celeryd" command name."""
-
-    command = ['celeryd']
