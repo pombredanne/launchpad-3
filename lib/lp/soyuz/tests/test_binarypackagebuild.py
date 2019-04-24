@@ -29,7 +29,10 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
@@ -920,7 +923,8 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         issuer = getUtility(IMacaroonIssuer, "binary-package-build")
         self.assertRaises(
-            ValueError, removeSecurityProxy(issuer).issueMacaroon, build)
+            BadMacaroonContext, removeSecurityProxy(issuer).issueMacaroon,
+            build)
 
     def test_issueMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(

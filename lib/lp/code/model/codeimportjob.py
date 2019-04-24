@@ -54,7 +54,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 
 
@@ -425,14 +428,15 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
     def checkIssuingContext(self, context):
         """See `MacaroonIssuerBase`."""
         if context.code_import.git_repository is None:
-            raise ValueError("context.code_import.git_repository is None")
+            raise BadMacaroonContext(
+                context, "context.code_import.git_repository is None")
         return context.id
 
     def checkVerificationContext(self, context):
         """See `MacaroonIssuerBase`."""
         if (not ICodeImportJob.providedBy(context) or
                 context.state != CodeImportJobState.RUNNING):
-            raise ValueError
+            raise BadMacaroonContext(context)
         return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):

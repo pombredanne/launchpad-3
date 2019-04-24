@@ -82,7 +82,10 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.enums import (
@@ -1390,13 +1393,14 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
         For issuing, the context is an `IBinaryPackageBuild`.
         """
         if not removeSecurityProxy(context).archive.private:
-            raise ValueError("Refusing to issue macaroon for public build.")
+            raise BadMacaroonContext(
+                context, "Refusing to issue macaroon for public build.")
         return removeSecurityProxy(context).id
 
     def checkVerificationContext(self, context):
         """See `MacaroonIssuerBase`."""
         if not ILibraryFileAlias.providedBy(context):
-            raise ValueError("Cannot handle context %r." % context)
+            raise BadMacaroonContext(context)
         return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):

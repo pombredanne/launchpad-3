@@ -18,7 +18,10 @@ from lp.services.librarian.interfaces import (
     ILibraryFileAlias,
     ILibraryFileAliasSet,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.testing import (
     person_logged_in,
@@ -84,13 +87,13 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
     def checkIssuingContext(self, context):
         """See `MacaroonIssuerBase`."""
         if not ILibraryFileAlias.providedBy(context):
-            raise ValueError("Cannot handle context %r." % context)
+            raise BadMacaroonContext(context)
         return context.id
 
     def checkVerificationContext(self, context):
         """See `IMacaroonIssuerBase`."""
         if not ILibraryFileAlias.providedBy(context):
-            raise ValueError("Cannot handle context %r." % context)
+            raise BadMacaroonContext(context)
         return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):

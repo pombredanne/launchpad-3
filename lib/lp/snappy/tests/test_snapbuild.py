@@ -40,7 +40,10 @@ from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
@@ -794,7 +797,8 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         build = self.factory.makeSnapBuild()
         issuer = getUtility(IMacaroonIssuer, "snap-build")
         self.assertRaises(
-            ValueError, removeSecurityProxy(issuer).issueMacaroon, build)
+            BadMacaroonContext, removeSecurityProxy(issuer).issueMacaroon,
+            build)
 
     def test_issueMacaroon_good(self):
         build = self.factory.makeSnapBuild(

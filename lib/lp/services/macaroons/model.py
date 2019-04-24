@@ -16,6 +16,7 @@ from pymacaroons import (
     )
 
 from lp.services.config import config
+from lp.services.macaroons.interfaces import BadMacaroonContext
 
 
 class MacaroonIssuerBase:
@@ -48,7 +49,7 @@ class MacaroonIssuerBase:
         was passed in or an adapted one.
 
         :param context: The context to check.
-        :raises ValueError: if the context is unsuitable.
+        :raises BadMacaroonContext: if the context is unsuitable.
         :return: The context to use to create the primary caveat.
         """
         return context
@@ -76,7 +77,7 @@ class MacaroonIssuerBase:
         context that was passed in or an adapted one.
 
         :param context: The context to check.
-        :raises ValueError: if the context is unsuitable.
+        :raises BadMacaroonContext: if the context is unsuitable.
         :return: The context to pass to individual caveat checkers.
         """
         return context
@@ -100,7 +101,7 @@ class MacaroonIssuerBase:
         if context is not None:
             try:
                 context = self.checkVerificationContext(context)
-            except ValueError:
+            except BadMacaroonContext:
                 return False
 
         def verify(caveat):
