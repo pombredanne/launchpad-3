@@ -14,6 +14,7 @@ from pymacaroons import (
     Macaroon,
     Verifier,
     )
+from pymacaroons.exceptions import MacaroonVerificationFailedException
 
 from lp.services.config import config
 from lp.services.macaroons.interfaces import BadMacaroonContext
@@ -122,5 +123,10 @@ class MacaroonIssuerBase:
             verifier = Verifier()
             verifier.satisfy_general(verify)
             return verifier.verify(macaroon, self._root_secret)
-        except Exception:
+        # XXX cjwatson 2019-04-24: This can currently raise a number of
+        # other exceptions in the presence of non-well-formed input data,
+        # but most of them are too broad to reasonably catch so we let them
+        # turn into OOPSes for now.  Revisit this once
+        # https://github.com/ecordell/pymacaroons/issues/51 is fixed.
+        except MacaroonVerificationFailedException:
             return False
