@@ -30,9 +30,9 @@ element name:
 
 The attendees element contains a list of person elements.
 
-    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> import operator
-    >>> soup = BSS(browser.contents)
+    >>> from lp.services.beautifulsoup import BeautifulSoup4 as BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents, 'xml')
     >>> people = soup.find('attendees').findAll('person')
     >>> for person in sorted(people, key=operator.itemgetter("displayname")):
     ...     print "%(displayname)s, %(name)s, %(start)s -> %(end)s" % person
@@ -42,7 +42,7 @@ The attendees element contains a list of person elements.
 The <unscheduled /> element contains a list of meetings. Each of these
 actually refers to a Specification.
 
-    >>> soup = BSS(browser.contents)
+    >>> soup = BeautifulSoup(browser.contents, 'xml')
     >>> meetings = soup.find('unscheduled').findAll('meeting')
     >>> for meeting in meetings:
     ...     print "%(id)s: %(name)s, %(lpurl)s" % meeting

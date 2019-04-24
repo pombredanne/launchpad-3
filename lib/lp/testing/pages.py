@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
@@ -24,6 +24,15 @@ from BeautifulSoup import (
     PageElement,
     ProcessingInstruction,
     Tag,
+    )
+from bs4.element import (
+    Comment as Comment4,
+    Declaration as Declaration4,
+    Doctype as Doctype4,
+    NavigableString as NavigableString4,
+    PageElement as PageElement4,
+    ProcessingInstruction as ProcessingInstruction4,
+    Tag as Tag4,
     )
 from contrib.oauth import (
     OAuthConsumer,
@@ -195,6 +204,8 @@ def find_tag_by_id(content, id):
     """Find and return the tag with the given ID"""
     if isinstance(content, PageElement):
         elements_with_id = content.findAll(True, {'id': id})
+    elif isinstance(content, PageElement4):
+        elements_with_id = content.find_all(True, {'id': id})
     else:
         elements_with_id = [
             tag for tag in BeautifulSoup(
@@ -272,10 +283,10 @@ def get_feedback_messages(content):
     return [extract_text(tag) for tag in soup]
 
 
-def print_feedback_messages(content):
+def print_feedback_messages(content, formatter='minimal'):
     """Print out the feedback messages."""
     for message in get_feedback_messages(content):
-        print extract_text(message)
+        print extract_text(message, formatter=formatter)
 
 
 def print_table(content, columns=None, skip_rows=None, sep="\t"):
@@ -337,7 +348,10 @@ def strip_label(label):
     return label.replace('\xC2', '').replace('\xA0', '').strip()
 
 
-IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
+IGNORED_ELEMENTS = [
+    Comment, Declaration, ProcessingInstruction,
+    Comment4, Declaration4, Doctype4, ProcessingInstruction4,
+    ]
 ELEMENTS_INTRODUCING_NEWLINE = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
     'div', 'noscript', 'blockquote', 'form', 'hr', 'table', 'fieldset',
@@ -348,7 +362,7 @@ NEWLINES_RE = re.compile(u'\n+')
 LEADING_AND_TRAILING_SPACES_RE = re.compile(
     u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
 TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
-NBSP_RE = re.compile(u'&nbsp;|&#160;')
+NBSP_RE = re.compile(u'&nbsp;|&#160;|\xa0')
 
 
 def extract_link_from_tag(tag, base=None):
@@ -357,7 +371,7 @@ def extract_link_from_tag(tag, base=None):
     A `tag` should contain a 'href' attribute, and `base` will commonly
     be extracted from browser.url.
     """
-    if not isinstance(tag, PageElement):
+    if not isinstance(tag, (PageElement, PageElement4)):
         link = BeautifulSoup(tag)
     else:
         link = tag
@@ -369,7 +383,8 @@ def extract_link_from_tag(tag, base=None):
         return urljoin(base, href)
 
 
-def extract_text(content, extract_image_text=False, skip_tags=None):
+def extract_text(content, extract_image_text=False, skip_tags=None,
+                 formatter='minimal'):
     """Return the text stripped of all tags.
 
     All runs of tabs and spaces are replaced by a single space and runs of
@@ -378,7 +393,7 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
     """
     if skip_tags is None:
         skip_tags = ['script']
-    if not isinstance(content, PageElement):
+    if not isinstance(content, (PageElement, PageElement4)):
         soup = BeautifulSoup(content)
     else:
         soup = content
@@ -409,10 +424,15 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
             result.append(unicode(node[:]))
         elif isinstance(node, NavigableString):
             result.append(unicode(node))
+        elif isinstance(node, NavigableString4):
+            result.append(node.format_string(node, formatter=formatter))
         else:
-            if isinstance(node, Tag):
+            if isinstance(node, (Tag, Tag4)):
                 # If the node has the class "sortkey" then it is invisible.
-                if node.get('class') == 'sortkey':
+                if isinstance(node, Tag) and node.get('class') == 'sortkey':
+                    continue
+                elif (isinstance(node, Tag4) and
+                        node.get('class') == ['sortkey']):
                     continue
                 elif getattr(node, 'name', '') in skip_tags:
                     continue
@@ -622,8 +642,12 @@ def print_location_apps(contents):
     else:
         for tab in location_apps:
             tab_text = extract_text(tab)
-            if tab['class'].find('active') != -1:
-                tab_text += ' (selected)'
+            if isinstance(tab['class'], list):  # BeautifulSoup 4
+                if 'active' in tab['class']:
+                    tab_text += ' (selected)'
+            else:                               # BeautifulSoup 3
+                if tab['class'].find('active') != -1:
+                    tab_text += ' (selected)'
             if tab.a:
                 link = tab.a['href']
             else:

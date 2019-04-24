@@ -4,14 +4,14 @@ Person RDF Pages
 We export FOAF RDF metadata from the /~Person.name/+index document.
 
     >>> from lp.services.beautifulsoup import (
-    ...     BeautifulSoup,
-    ...     SoupStrainer,
+    ...     BeautifulSoup4 as BeautifulSoup,
+    ...     SoupStrainer4 as SoupStrainer,
     ...     )
     >>> anon_browser.open("http://launchpad.dev/~name16")
     >>> strainer = SoupStrainer(['link'], {'type': ['application/rdf+xml']})
-    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+    >>> soup = BeautifulSoup(anon_browser.contents, parse_only=strainer)
     >>> print soup.renderContents()
-    <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf" />
+    <link href="+rdf" rel="meta" title="FOAF" type="application/rdf+xml"/>
 
 
 Individual RDF
@@ -102,7 +102,7 @@ Note how ascii and non-ascii names are rendered properly:
 
     >>> anon_browser.open("http://launchpad.dev/~carlos/+rdf")
     >>> strainer = SoupStrainer(['foaf:name'])
-    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+    >>> soup = BeautifulSoup(anon_browser.contents, parse_only=strainer)
     >>> for tag in soup:
     ...   tag.renderContents()
     'Carlos Perell\xc3\xb3 Mar\xc3\xadn'
@@ -112,7 +112,7 @@ present:
 
     >>> anon_browser.open("http://launchpad.dev/~name21/+rdf")
     >>> strainer = SoupStrainer(['foaf:member'])
-    >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
+    >>> soup = BeautifulSoup(anon_browser.contents, parse_only=strainer)
     >>> len(soup)
     0
 
