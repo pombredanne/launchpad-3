@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for the CodeImportJob table."""
@@ -12,10 +12,6 @@ __all__ = [
 
 import datetime
 
-from pymacaroons import (
-    Macaroon,
-    Verifier,
-    )
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -58,7 +54,11 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
+from lp.services.macaroons.model import MacaroonIssuerBase
 
 
 @implementer(ICodeImportJob)
@@ -409,7 +409,9 @@ class CodeImportJobWorkflow:
 
 
 @implementer(IMacaroonIssuer)
-class CodeImportJobMacaroonIssuer:
+class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
+
+    identifier = "code-import-job"
 
     @property
     def _root_secret(self):
@@ -423,38 +425,24 @@ class CodeImportJobMacaroonIssuer:
                 "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`."""
-        assert context.code_import.git_repository is not None
-        macaroon = Macaroon(
-            location=config.vhost.mainsite.hostname,
-            identifier="code-import-job", key=self._root_secret)
-        macaroon.add_first_party_caveat("lp.code-import-job %s" % context.id)
-        return macaroon
+    def checkIssuingContext(self, context):
+        """See `MacaroonIssuerBase`."""
+        if context.code_import.git_repository is None:
+            raise BadMacaroonContext(
+                context, "context.code_import.git_repository is None")
+        return context.id
 
-    def checkMacaroonIssuer(self, macaroon):
-        """See `IMacaroonIssuer`."""
-        if macaroon.location != config.vhost.mainsite.hostname:
-            return False
-        try:
-            verifier = Verifier()
-            verifier.satisfy_general(
-                lambda caveat: caveat.startswith("lp.code-import-job "))
-            return verifier.verify(macaroon, self._root_secret)
-        except Exception:
-            return False
+    def checkVerificationContext(self, context):
+        """See `MacaroonIssuerBase`."""
+        if (not ICodeImportJob.providedBy(context) or
+                context.state != CodeImportJobState.RUNNING):
+            raise BadMacaroonContext(context)
+        return context
 
-    def verifyMacaroon(self, macaroon, context):
-        """See `IMacaroonIssuer`."""
-        if not ICodeImportJob.providedBy(context):
-            return False
-        if not self.checkMacaroonIssuer(macaroon):
-            return False
-        try:
-            verifier = Verifier()
-            verifier.satisfy_exact("lp.code-import-job %s" % context.id)
-            return (
-                verifier.verify(macaroon, self._root_secret) and
-                context.state == CodeImportJobState.RUNNING)
-        except Exception:
-            return False
+    def verifyPrimaryCaveat(self, caveat_value, context):
+        """See `MacaroonIssuerBase`."""
+        if context is None:
+            # We're only verifying that the macaroon could be valid for some
+            # context.
+            return True
+        return caveat_value == str(context.id)
