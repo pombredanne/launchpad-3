@@ -25,7 +25,10 @@ from lp.services.authserver.interfaces import (
     IAuthServerApplication,
     )
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.xmlrpc import faults
@@ -90,7 +93,7 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
             # issueMacaroon isn't normally public, but we clearly need it
             # here.
             macaroon = removeSecurityProxy(issuer).issueMacaroon(context)
-        except ValueError:
+        except BadMacaroonContext:
             return faults.PermissionDenied()
         return macaroon.serialize()
 

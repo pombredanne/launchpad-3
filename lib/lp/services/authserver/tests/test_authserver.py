@@ -30,7 +30,6 @@ from lp.services.macaroons.interfaces import (
 from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.testing import (
     person_logged_in,
-    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.fixture import ZopeUtilityFixture
@@ -107,7 +106,7 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
         return caveat_value == str(context.id)
 
 
-class MacaroonTests(TestCase):
+class MacaroonTests(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
@@ -137,6 +136,12 @@ class MacaroonTests(TestCase):
         self.assertEqual(
             faults.PermissionDenied(),
             self.authserver.issueMacaroon('test', 'LibraryFileAlias', 1))
+
+    def test_issue_bad_context(self):
+        build = self.factory.makeSnapBuild()
+        self.assertEqual(
+            faults.PermissionDenied(),
+            self.authserver.issueMacaroon('test', 'SnapBuild', build.id))
 
     def test_issue_success(self):
         macaroon = Macaroon.deserialize(
