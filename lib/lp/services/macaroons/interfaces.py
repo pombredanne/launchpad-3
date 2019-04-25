@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
+from zope.schema import Bool
 
 
 class BadMacaroonContext(Exception):
@@ -26,6 +27,9 @@ class BadMacaroonContext(Exception):
 
 class IMacaroonIssuerPublic(Interface):
     """Public interface to a policy for verifying macaroons."""
+
+    issuable_via_authserver = Bool(
+        "Does this issuer allow issuing macaroons via the authserver?")
 
     def verifyMacaroon(macaroon, context, require_context=True):
         """Verify that `macaroon` is valid for `context`.
@@ -49,6 +53,6 @@ class IMacaroonIssuer(IMacaroonIssuerPublic):
 
         :param context: The context that the returned macaroon should relate
             to.
-        :raises ValueError: if the context is unsuitable.
+        :raises BadMacaroonContext: if the context is unsuitable.
         :return: A macaroon.
         """

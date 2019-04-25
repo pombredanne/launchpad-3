@@ -597,17 +597,14 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
 class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
 
     identifier = "snap-build"
+    issuable_via_authserver = True
 
     def checkIssuingContext(self, context):
         """See `MacaroonIssuerBase`.
 
-        For issuing, the context is an `ISnapBuild` or its ID.
+        For issuing, the context is an `ISnapBuild`.
         """
-        if ISnapBuild.providedBy(context):
-            pass
-        elif isinstance(context, int):
-            context = getUtility(ISnapBuildSet).getByID(context)
-        else:
+        if not ISnapBuild.providedBy(context):
             raise BadMacaroonContext(context)
         if not removeSecurityProxy(context).is_private:
             raise BadMacaroonContext(
