@@ -1,4 +1,4 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Questions."""
@@ -29,7 +29,7 @@ from lp.answers.errors import (
     NotQuestionOwnerError,
     QuestionTargetError,
     )
-from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.beautifulsoup import BeautifulSoup4 as BeautifulSoup
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
@@ -109,7 +109,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
     def findQuestionTitle(self, response):
         """Find the question title field in an XHTML document fragment."""
         soup = BeautifulSoup(response.body)
-        dt = soup.find('dt', text="title").parent
+        dt = soup.find('dt', text="title")
         dd = dt.findNextSibling('dd')
         return str(dd.contents.pop())
 

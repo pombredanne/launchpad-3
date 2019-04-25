@@ -10,7 +10,7 @@ and one that doesn't.
 The LaunchpadRadioWidget is mostly used to display items from
 an enumerated type.
 
-    >>> from lp.services.beautifulsoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup4 as BeautifulSoup
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.branch import IBranch
     >>> branch = factory.makeAnyBranch()
@@ -25,15 +25,15 @@ buttons inside.
 
     >>> html = BeautifulSoup(radio_widget())
     >>> for label in html.findAll('label'):
-    ...     print label.renderContents()
-    <input class="radioType" checked="checked" id="field.branch_type.0"
-           name="field.branch_type" type="radio" value="HOSTED" />&nbsp;Hosted
+    ...     print label.encode_contents(formatter='html')
+    <input checked="checked" class="radioType" id="field.branch_type.0"
+           name="field.branch_type" type="radio" value="HOSTED"/>&nbsp;Hosted
     <input class="radioType" id="field.branch_type.1" name="field.branch_type"
-           type="radio" value="MIRRORED" />&nbsp;Mirrored
+           type="radio" value="MIRRORED"/>&nbsp;Mirrored
     <input class="radioType" id="field.branch_type.2" name="field.branch_type"
-           type="radio" value="IMPORTED" />&nbsp;Imported
+           type="radio" value="IMPORTED"/>&nbsp;Imported
     <input class="radioType" id="field.branch_type.3" name="field.branch_type"
-           type="radio" value="REMOTE" />&nbsp;Remote
+           type="radio" value="REMOTE"/>&nbsp;Remote
 
 
 LaunchpadRadioWidgetWithDescription
