@@ -18,7 +18,6 @@ from pymacaroons.exceptions import MacaroonVerificationFailedException
 
 from lp.services.config import config
 from lp.services.macaroons.interfaces import BadMacaroonContext
-from lp.services.scripts import log
 
 
 class MacaroonIssuerBase:
@@ -96,34 +95,33 @@ class MacaroonIssuerBase:
         """
         raise NotImplementedError
 
-    def verifyMacaroon(self, macaroon, context, require_context=True):
+    def verifyMacaroon(self, macaroon, context, require_context=True,
+                       errors=None):
         """See `IMacaroonIssuer`."""
         if macaroon.location != config.vhost.mainsite.hostname:
-            log.info("Macaroon has unknown location '%s'." % macaroon.location)
+            if errors is not None:
+                errors.append(
+                    "Macaroon has unknown location '%s'." % macaroon.location)
             return False
         if require_context and context is None:
-            log.info("Expected macaroon verification context but got None.")
+            if errors is not None:
+                errors.append(
+                    "Expected macaroon verification context but got None.")
             return False
         if context is not None:
             try:
                 context = self.checkVerificationContext(context)
             except BadMacaroonContext as e:
-                log.info(str(e))
+                if errors is not None:
+                    errors.append(str(e))
                 return False
-
-        # XXX cjwatson 2019-04-11: Once we're on Python 3, we should use
-        # "nonlocal" instead of this hack.
-        class VerificationState:
-            logged_caveat_error = False
-
-        state = VerificationState()
 
         def verify(caveat):
             try:
                 caveat_name, caveat_value = caveat.split(" ", 1)
             except ValueError:
-                log.info("Cannot parse caveat '%s'." % caveat)
-                state.logged_caveat_error = True
+                if errors is not None:
+                    errors.append("Cannot parse caveat '%s'." % caveat)
                 return False
             if caveat_name == self._primary_caveat_name:
                 checker = self.verifyPrimaryCaveat
@@ -131,12 +129,12 @@ class MacaroonIssuerBase:
                 # XXX cjwatson 2019-04-09: For now we just fail closed if
                 # there are any other caveats, which is good enough for
                 # internal use.
-                log.info("Unhandled caveat name '%s'." % caveat_name)
-                state.logged_caveat_error = True
+                if errors is not None:
+                    errors.append("Unhandled caveat name '%s'." % caveat_name)
                 return False
             if not checker(caveat_value, context):
-                log.info("Caveat check for '%s' failed." % caveat)
-                state.logged_caveat_error = True
+                if errors is not None:
+                    errors.append("Caveat check for '%s' failed." % caveat)
                 return False
             return True
 
@@ -150,6 +148,6 @@ class MacaroonIssuerBase:
         # turn into OOPSes for now.  Revisit this once
         # https://github.com/ecordell/pymacaroons/issues/51 is fixed.
         except MacaroonVerificationFailedException as e:
-            if not state.logged_caveat_error:
-                log.info(str(e))
+            if errors is not None and not errors:
+                errors.append(str(e))
             return False
