@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TestP3APackages."""
@@ -25,7 +25,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.utilities.celebrities import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.beautifulsoup import BeautifulSoup4 as BeautifulSoup
 from lp.services.webapp import canonical_url
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
@@ -397,9 +397,10 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
         self.assertEqual([],
             soup.findAll(
                 'div', attrs={'class': 'pending-job', 'job_id': jobs[-1].id}))
+        showing_tags = soup.find_all(
+            'span', text=re.compile('Showing 5 of .'))
         self.assertEqual(
-            ['Showing 5 of 7'],
-            soup.findAll('span', text=re.compile('Showing 5 of .')))
+            ['Showing 5 of 7'], [tag.string for tag in showing_tags])
 
     def test_job_notifications_display_owner_is_team(self):
         team = self.factory.makeTeam()

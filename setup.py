@@ -148,6 +148,7 @@ setup(
         'auditorfixture',
         'backports.lzma',
         'BeautifulSoup',
+        'beautifulsoup4[lxml]',
         'bzr',
         'celery',
         'cssselect',

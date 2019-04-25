@@ -8,7 +8,7 @@ lp.sfood:
 	-I $(LIB_DIR)/devscripts -I $(LIB_DIR)/contrib \
 	-I $(LIB_DIR)/canonical/not-used $(LIB_DIR)/canonical \
 	$(LIB_DIR)/lp 2>/dev/null | grep -v contrib/ \
-	| grep -v sqlobject | grep -v BeautifulSoup | grep -v psycopg \
+	| grep -v sqlobject | egrep -v 'BeautifulSoup|bs4' | grep -v psycopg \
 	| grep -v schoolbell | grep -v '/tests/' | grep -v '/ftests/' \
     | grep -v 'lp/services/config' > lp.sfood.tmp
 	mv lp.sfood.tmp lp.sfood
