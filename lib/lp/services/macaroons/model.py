@@ -23,6 +23,8 @@ from lp.services.macaroons.interfaces import BadMacaroonContext
 class MacaroonIssuerBase:
     """See `IMacaroonIssuer`."""
 
+    issuable_via_authserver = False
+
     @property
     def identifier(self):
         """An identifying name for this issuer."""
