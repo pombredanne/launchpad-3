@@ -27,11 +27,14 @@ class IAuthServer(Interface):
             person with the given name.
         """
 
-    def issueMacaroon(issuer_name, context):
+    def issueMacaroon(issuer_name, context_type, context):
         """Issue a macaroon of type `issuer_name` for `context`.
 
         :param issuer_name: An `IMacaroonIssuer` name.  Only issuers where
             `issuable_via_authserver` is True are permitted.
+        :param context_type: A string identifying the type of context for
+            which to issue the macaroon.  Currently only 'LibraryFileAlias'
+            and 'SnapBuild' are supported.
         :param context: The context for which to issue the macaroon.  Note
             that this is passed over XML-RPC, so it should be plain data
             (e.g. an ID) rather than a database object.
@@ -43,7 +46,8 @@ class IAuthServer(Interface):
 
         :param macaroon_raw: A serialised macaroon.
         :param context_type: A string identifying the type of context to
-            check.  Currently only 'LibraryFileAlias' is supported.
+            check.  Currently only 'LibraryFileAlias' and 'SnapBuild' are
+            supported.
         :param context: The context to check.  Note that this is passed over
             XML-RPC, so it should be plain data (e.g. an ID) rather than a
             database object.

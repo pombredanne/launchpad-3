@@ -822,7 +822,7 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         private_root = getUtility(IPrivateApplication)
         authserver = AuthServerAPIView(private_root.authserver, TestRequest())
         macaroon = Macaroon.deserialize(
-            authserver.issueMacaroon("snap-build", build.id))
+            authserver.issueMacaroon("snap-build", "SnapBuild", build.id))
         self.assertThat(macaroon, MatchesStructure(
             location=Equals("launchpad.dev"),
             identifier=Equals("snap-build"),

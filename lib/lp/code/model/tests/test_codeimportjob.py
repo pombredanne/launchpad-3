@@ -1316,7 +1316,7 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         authserver = AuthServerAPIView(private_root.authserver, TestRequest())
         self.assertEqual(
             faults.PermissionDenied(),
-            authserver.issueMacaroon("code-import-job", job))
+            authserver.issueMacaroon("code-import-job", "CodeImportJob", job))
 
     def test_verifyMacaroon_good(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)

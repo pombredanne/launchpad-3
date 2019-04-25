@@ -123,27 +123,29 @@ class MacaroonTests(TestCase):
     def test_issue_unknown_issuer(self):
         self.assertEqual(
             faults.PermissionDenied(),
-            self.authserver.issueMacaroon('unknown-issuer', 0))
+            self.authserver.issueMacaroon(
+                'unknown-issuer', 'LibraryFileAlias', 1))
 
-    def test_issue_bad_context_type(self):
+    def test_issue_wrong_context_type(self):
         self.assertEqual(
             faults.PermissionDenied(),
-            self.authserver.issueMacaroon('unknown-issuer', ''))
+            self.authserver.issueMacaroon(
+                'unknown-issuer', 'nonsense', 1))
 
     def test_issue_not_issuable_via_authserver(self):
         self.issuer.issuable_via_authserver = False
         self.assertEqual(
             faults.PermissionDenied(),
-            self.authserver.issueMacaroon('test', 0))
+            self.authserver.issueMacaroon('test', 'LibraryFileAlias', 1))
 
     def test_issue_success(self):
         macaroon = Macaroon.deserialize(
-            self.authserver.issueMacaroon('test', 0))
+            self.authserver.issueMacaroon('test', 'LibraryFileAlias', 1))
         self.assertThat(macaroon, MatchesStructure(
             location=Equals(config.vhost.mainsite.hostname),
             identifier=Equals('test'),
             caveats=MatchesListwise([
-                MatchesStructure.byEquality(caveat_id='lp.test 0'),
+                MatchesStructure.byEquality(caveat_id='lp.test 1'),
                 ])))
 
     def test_verify_nonsense_macaroon(self):

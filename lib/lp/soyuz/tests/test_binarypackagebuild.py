@@ -949,7 +949,8 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         authserver = AuthServerAPIView(private_root.authserver, TestRequest())
         self.assertEqual(
             faults.PermissionDenied(),
-            authserver.issueMacaroon("binary-package-build", build))
+            authserver.issueMacaroon(
+                "binary-package-build", "BinaryPackageBuild", build))
 
     def test_verifyMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(

@@ -27,6 +27,7 @@ from lp.services.authserver.interfaces import (
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp import LaunchpadXMLRPCView
+from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.xmlrpc import faults
 
 
@@ -46,7 +47,27 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
                      for key in person.sshkeys],
             }
 
-    def issueMacaroon(self, issuer_name, context):
+    def _resolveContext(self, context_type, context):
+        """Resolve a serialised context.
+
+        :param context_type: A string identifying the type of context.
+            Currently only 'LibraryFileAlias' and 'SnapBuild' are supported.
+        :param context: The context as plain data (e.g. an ID).
+        :return: The resolved context, or None.
+        """
+        if context_type == 'LibraryFileAlias':
+            # The context is a `LibraryFileAlias` ID.
+            try:
+                return getUtility(ILibraryFileAliasSet)[context]
+            except SQLObjectNotFound:
+                return None
+        elif context_type == 'SnapBuild':
+            # The context is a `SnapBuild` ID.
+            return getUtility(ISnapBuildSet).getByID(context)
+        else:
+            return None
+
+    def issueMacaroon(self, issuer_name, context_type, context):
         """See `IAuthServer.issueMacaroon`."""
         try:
             issuer = getUtility(IMacaroonIssuer, issuer_name)
@@ -59,6 +80,11 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
         # they must issue macaroons with carefully-designed constraints to
         # minimise privilege-escalation attacks.
         if not issuer.issuable_via_authserver:
+            return faults.PermissionDenied()
+        # The context is plain data, since we can't pass general objects over
+        # the XML-RPC interface.  Look it up so that we can verify it.
+        context = self._resolveContext(context_type, context)
+        if context is None:
             return faults.PermissionDenied()
         try:
             # issueMacaroon isn't normally public, but we clearly need it
@@ -82,15 +108,10 @@ class AuthServerAPIView(LaunchpadXMLRPCView):
             return faults.Unauthorized()
         # The context is plain data, since we can't pass general objects over
         # the XML-RPC interface.  Look it up so that we can verify it.
-        if context_type == 'LibraryFileAlias':
-            # The context is a `LibraryFileAlias` ID.
-            try:
-                lfa = getUtility(ILibraryFileAliasSet)[context]
-            except SQLObjectNotFound:
-                return faults.Unauthorized()
-        else:
+        context = self._resolveContext(context_type, context)
+        if context is None:
             return faults.Unauthorized()
-        if not issuer.verifyMacaroon(macaroon, lfa):
+        if not issuer.verifyMacaroon(macaroon, context):
             return faults.Unauthorized()
         return True
 
