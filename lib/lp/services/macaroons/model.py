@@ -17,6 +17,7 @@ from pymacaroons import (
 from pymacaroons.exceptions import MacaroonVerificationFailedException
 
 from lp.services.config import config
+from lp.services.macaroons.interfaces import BadMacaroonContext
 from lp.services.scripts import log
 
 
@@ -31,7 +32,7 @@ class MacaroonIssuerBase:
         raise NotImplementedError
 
     @property
-    def primary_caveat_name(self):
+    def _primary_caveat_name(self):
         """The name of the primary context caveat issued by this issuer."""
         return "lp.%s" % self.identifier
 
@@ -47,13 +48,13 @@ class MacaroonIssuerBase:
         """Check that the issuing context is suitable.
 
         Concrete implementations may implement this method to check that the
-        context of a macaroon issuance is suitable.  The returned
-        context is passed to individual caveat checkers, and may be the same
-        context that was passed in or an adapted one.
+        context of a macaroon issuance is suitable.  The returned context is
+        used to create the primary caveat, and may be the same context that
+        was passed in or an adapted one.
 
         :param context: The context to check.
-        :raises ValueError: if the context is unsuitable.
-        :return: The context to pass to individual caveat checkers.
+        :raises BadMacaroonContext: if the context is unsuitable.
+        :return: The context to use to create the primary caveat.
         """
         return context
 
@@ -68,7 +69,7 @@ class MacaroonIssuerBase:
             location=config.vhost.mainsite.hostname,
             identifier=self.identifier, key=self._root_secret)
         macaroon.add_first_party_caveat(
-            "%s %s" % (self.primary_caveat_name, context))
+            "%s %s" % (self._primary_caveat_name, context))
         return macaroon
 
     def checkVerificationContext(self, context):
@@ -80,7 +81,7 @@ class MacaroonIssuerBase:
         context that was passed in or an adapted one.
 
         :param context: The context to check.
-        :raises ValueError: if the context is unsuitable.
+        :raises BadMacaroonContext: if the context is unsuitable.
         :return: The context to pass to individual caveat checkers.
         """
         return context
@@ -106,7 +107,7 @@ class MacaroonIssuerBase:
         if context is not None:
             try:
                 context = self.checkVerificationContext(context)
-            except ValueError as e:
+            except BadMacaroonContext as e:
                 log.info(str(e))
                 return False
 
@@ -124,7 +125,7 @@ class MacaroonIssuerBase:
                 log.info("Cannot parse caveat '%s'." % caveat)
                 state.logged_caveat_error = True
                 return False
-            if caveat_name == self.primary_caveat_name:
+            if caveat_name == self._primary_caveat_name:
                 checker = self.verifyPrimaryCaveat
             else:
                 # XXX cjwatson 2019-04-09: For now we just fail closed if
@@ -143,10 +144,12 @@ class MacaroonIssuerBase:
             verifier = Verifier()
             verifier.satisfy_general(verify)
             return verifier.verify(macaroon, self._root_secret)
+        # XXX cjwatson 2019-04-24: This can currently raise a number of
+        # other exceptions in the presence of non-well-formed input data,
+        # but most of them are too broad to reasonably catch so we let them
+        # turn into OOPSes for now.  Revisit this once
+        # https://github.com/ecordell/pymacaroons/issues/51 is fixed.
         except MacaroonVerificationFailedException as e:
             if not state.logged_caveat_error:
                 log.info(str(e))
-            return False
-        except Exception:
-            log.exception("Unhandled exception while verifying macaroon.")
             return False

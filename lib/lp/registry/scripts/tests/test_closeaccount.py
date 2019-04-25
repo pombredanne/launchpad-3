@@ -10,6 +10,8 @@ __metaclass__ = type
 import six
 from storm.store import Store
 from testtools.matchers import (
+    MatchesSetwise,
+    MatchesStructure,
     Not,
     StartsWith,
     )
@@ -18,7 +20,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QuestionStatus
+from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.model.bugsummary import BugSummary
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
@@ -407,3 +411,74 @@ class TestCloseAccount(TestCaseWithFactory):
             other_submission, hw_submission_set.getBySubmissionKey(other_key))
         self.assertEqual(
             [other_submission_device], list(other_submission.devices))
+
+    def test_skips_bug_summary(self):
+        person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        bug = self.factory.makeBug(information_type=InformationType.USERDATA)
+        bug.subscribe(person, bug.owner)
+        bug.subscribe(other_person, bug.owner)
+        store = Store.of(bug)
+        summaries = list(store.find(
+            BugSummary,
+            BugSummary.viewed_by_id.is_in([person.id, other_person.id])))
+        self.assertThat(summaries, MatchesSetwise(
+            MatchesStructure.byEquality(count=1, viewed_by=person),
+            MatchesStructure.byEquality(count=1, viewed_by=other_person)))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        # BugSummaryJournal has been updated, but BugSummary hasn't yet.
+        summaries = list(store.find(
+            BugSummary,
+            BugSummary.viewed_by_id.is_in([person.id, other_person.id])))
+        self.assertThat(summaries, MatchesSetwise(
+            MatchesStructure.byEquality(count=1, viewed_by=person),
+            MatchesStructure.byEquality(count=1, viewed_by=other_person),
+            MatchesStructure.byEquality(count=-1, viewed_by=person)))
+        # If we force an update (the equivalent of the
+        # BugSummaryJournalRollup garbo job), that's enough to get rid of
+        # the reference.
+        store.execute('SELECT bugsummary_rollup_journal()')
+        summaries = list(store.find(
+            BugSummary,
+            BugSummary.viewed_by_id.is_in([person.id, other_person.id])))
+        self.assertThat(summaries, MatchesSetwise(
+            MatchesStructure.byEquality(viewed_by=other_person)))
+
+    def test_skips_bug_nomination(self):
+        person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        targets = [self.factory.makeProductSeries() for _ in range(2)]
+        self.factory.makeBugTask(bug=bug, target=targets[0].parent)
+        bug.addNomination(person, targets[0])
+        self.factory.makeBugTask(bug=bug, target=targets[1].parent)
+        bug.addNomination(other_person, targets[1])
+        self.assertThat(bug.getNominations(), MatchesSetwise(
+            MatchesStructure.byEquality(owner=person),
+            MatchesStructure.byEquality(owner=other_person)))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertThat(bug.getNominations(), MatchesSetwise(
+            MatchesStructure.byEquality(owner=person),
+            MatchesStructure.byEquality(owner=other_person)))
+
+    def test_skips_inactive_product_owner(self):
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=person)
+        product.active = False
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual(person, product.owner)

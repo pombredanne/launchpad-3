@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for error logging & OOPS reporting."""
@@ -45,6 +45,7 @@ from lp.services.webapp.interfaces import (
     IUnloggedException,
     NoReferrerError,
     )
+from lp.testing import TestCase
 from lp.testing.layers import LaunchpadLayer
 
 
@@ -55,7 +56,7 @@ class ArbitraryException(Exception):
     """Used to test handling of exceptions in OOPS reports."""
 
 
-class TestErrorReportingUtility(testtools.TestCase):
+class TestErrorReportingUtility(TestCase):
 
     # want rabbit
     layer = LaunchpadLayer

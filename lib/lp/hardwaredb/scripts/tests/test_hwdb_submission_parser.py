@@ -3,8 +3,10 @@
 
 """Tests of the HWDB submissions parser."""
 
-from cStringIO import StringIO
+from __future__ import absolute_import, print_function, unicode_literals
+
 from datetime import datetime
+import io
 import logging
 import os
 from textwrap import dedent
@@ -343,18 +345,18 @@ class TestHWDBSubmissionParser(TestCase):
 
     def testStringPropertyEncoding(self):
         """Different encodings are properly handled."""
-        xml_template = '''<?xml version="1.0" encoding="%s"?>
-                          <property type="str" name="foo">%s</property>'''
+        xml_template = u'''<?xml version="1.0" encoding="%s"?>
+                           <property type="str" name="foo">%s</property>'''
         umlaut = u'\xe4'
         parser = SubmissionParser()
         for encoding in ('utf-8', 'iso-8859-1'):
-            xml = xml_template % (encoding, umlaut.encode(encoding))
-            tree = etree.parse(StringIO(xml))
+            xml = (xml_template % (encoding, umlaut)).encode(encoding)
+            tree = etree.parse(io.BytesIO(xml))
             node = tree.getroot()
             result = parser._parseProperty(node)
             self.assertEqual(result, ('foo', (umlaut, 'str')),
                 'Invalid parsing result for string encoding %s, '
-                'expected am umlaut (\xe4), got %s'
+                'expected an umlaut (\xe4), got %s'
                     % (encoding, repr(result)))
 
     def testIntegerPropertyTypes(self):
@@ -1431,7 +1433,7 @@ invalid line
         sample_data_path = os.path.join(
             config.root, 'lib', 'lp', 'hardwaredb', 'scripts',
             'tests', 'hardwaretest.xml')
-        sample_data = open(sample_data_path).read()
+        sample_data = open(sample_data_path, 'rb').read()
         parser = SubmissionParser()
         result = parser.parseSubmission(sample_data, 'parser test 1')
         self.assertNotEqual(result, None,
@@ -1441,7 +1443,7 @@ invalid line
         # parseSubmission returns None, if the submitted data is not
         # well-formed XML...
         result = parser.parseSubmission(
-            sample_data.replace('<summary', '<inconsitent_opening_tag'),
+            sample_data.replace(b'<summary', b'<inconsitent_opening_tag'),
             'parser test 2')
         self.assertEqual(result, None,
                          'Not-well-formed XML data accepted by '
@@ -1449,7 +1451,7 @@ invalid line
 
         # ...or if RelaxNG validation fails...
         result = parser.parseSubmission(
-            sample_data.replace('<summary', '<summary foo="bar"'),
+            sample_data.replace(b'<summary', b'<summary foo="bar"'),
             'parser test 3')
         self.assertEqual(result, None,
                          'XML data that does pass the Relax NG validation '
@@ -1459,8 +1461,8 @@ invalid line
         # property set containing two properties with the same name.
         result = parser.parseSubmission(
             sample_data.replace(
-                '<property name="info.parent"',
-                """<property name="info.parent" type="dbus.String">
+                b'<property name="info.parent"',
+                b"""<property name="info.parent" type="dbus.String">
                        foo
                    </property>
                    <property name="info.parent"
@@ -1980,8 +1982,8 @@ invalid line
             [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
-            "Non-PCI udev device with PCI properties: set(['PCI_SLOT_NAME']) "
-            "'/devices/LNXSYSTM:00'")
+            "Non-PCI udev device with PCI properties: set([u'PCI_SLOT_NAME']) "
+            "u'/devices/LNXSYSTM:00'")
 
     def testCheckUdevPciPropertiesPciDeviceWithoutRequiredProperties(self):
         """Test of SubmissionParser.checkUdevPciProperties().
@@ -1997,7 +1999,7 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key,
             "PCI udev device without required PCI properties: "
-            "set(['PCI_CLASS']) '/devices/pci0000:00/0000:00:1f.2'")
+            "set(['PCI_CLASS']) u'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithNonIntegerPciClass(self):
         """Test of SubmissionParser.checkUdevPciProperties().
@@ -2012,8 +2014,8 @@ invalid line
             [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
-            "Invalid udev PCI class: 'not-an-integer' "
-            "'/devices/pci0000:00/0000:00:1f.2'")
+            "Invalid udev PCI class: u'not-an-integer' "
+            "u'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidPciClassValue(self):
         """Test of SubmissionParser.checkUdevPciProperties().
@@ -2028,8 +2030,8 @@ invalid line
             [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
-            "Invalid udev PCI class: '1234567' "
-            "'/devices/pci0000:00/0000:00:1f.2'")
+            "Invalid udev PCI class: u'1234567' "
+            "u'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidDeviceID(self):
         """Test of SubmissionParser.checkUdevPciProperties().
@@ -2044,8 +2046,8 @@ invalid line
             [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
-            "Invalid udev PCI device ID: 'not-an-id' "
-            "'/devices/pci0000:00/0000:00:1f.2'")
+            "Invalid udev PCI device ID: u'not-an-id' "
+            "u'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidSubsystemID(self):
         """Test of SubmissionParser.checkUdevPciProperties().
@@ -2060,8 +2062,8 @@ invalid line
             [self.udev_root_device, self.udev_pci_device]))
         self.assertErrorMessage(
             parser.submission_key,
-            "Invalid udev PCI device ID: 'not-a-subsystem-id' "
-            "'/devices/pci0000:00/0000:00:1f.2'")
+            "Invalid udev PCI device ID: u'not-a-subsystem-id' "
+            "u'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevUsbProperties(self):
         """Test of SubmissionParser.checkUdevUsbProperties().
@@ -2096,7 +2098,7 @@ invalid line
             self.assertErrorMessage(
                 parser.submission_key,
                 "USB udev device found without required properties: "
-                "set(['%s']) '/devices/pci0000:00/0000:00:1d.1/usb3/3-2'"
+                "set(['%s']) u'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'"
                 % property_name)
             self.udev_usb_device['E'][property_name] = saved_property
 
@@ -2114,8 +2116,8 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key,
             "USB udev device found with invalid product ID: "
-            "'not-a-valid-usb-product-id' "
-            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+            "u'not-a-valid-usb-product-id' "
+            "u'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
 
     def testCheckUdevUsbProperties_with_invalid_type_data(self):
         """Test of SubmmissionParser.checkUdevUsbProperties().
@@ -2129,8 +2131,8 @@ invalid line
             [self.udev_root_device, self.udev_usb_device]))
         self.assertErrorMessage(
             parser.submission_key,
-            "USB udev device found with invalid type data: 'no-type' "
-            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+            "USB udev device found with invalid type data: u'no-type' "
+            "u'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
 
     def testCheckUdevUsbProperties_with_invalid_devtype(self):
         """Test of SubmmissionParser.checkUdevUsbProperties().
@@ -2145,8 +2147,8 @@ invalid line
             [self.udev_root_device, self.udev_usb_device]))
         self.assertErrorMessage(
             parser.submission_key,
-            "USB udev device found with invalid udev type data: 'nonsense' "
-            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+            "USB udev device found with invalid udev type data: u'nonsense' "
+            "u'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
 
     def testCheckUdevUsbProperties_interface_without_interface_property(self):
         """Test of SubmmissionParser.checkUdevUsbProperties().
@@ -2161,7 +2163,7 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key,
             "USB interface udev device found without INTERFACE property: "
-            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
+            "u'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
 
     def testCheckUdevUsbProperties_interface_invalid_interface_property(self):
         """Test of SubmmissionParser.checkUdevUsbProperties().
@@ -2177,8 +2179,8 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key,
             "USB Interface udev device found with invalid INTERFACE "
-            "property: 'nonsense' "
-            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
+            "property: u'nonsense' "
+            "u'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
 
     def testCheckUdevScsiProperties(self):
         """Test of SubmissionParser.checkUdevScsiProperties()."""
@@ -2218,7 +2220,7 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key,
             "SCSI udev node found without DEVTYPE property: "
-            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+            "u'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
 
     def testCheckUdevScsiProperties_no_sysfs_data(self):
         """Test of SubmissionParser.checkUdevScsiProperties().
@@ -2234,7 +2236,7 @@ invalid line
         self.assertErrorMessage(
             parser.submission_key,
             "SCSI udev device node found without related sysfs record: "
-            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+            "u'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
 
     def testCheckUdevScsiProperties_missing_sysfs_attributes(self):
         """Test of SubmissionParser.checkUdevScsiProperties().
@@ -2255,7 +2257,7 @@ invalid line
             parser.submission_key,
             "SCSI udev device found without required sysfs attributes: "
             "set(['model']) "
-            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+            "u'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
 
     class UdevTestSubmissionParser(SubmissionParser):
         """A variant of SubmissionParser that shortcuts udev related tests.
@@ -2612,4 +2614,4 @@ invalid line
         self.assertErrorMessage(
             'Consistency check detects circular parent-child relationships',
             "Found HAL devices with circular parent/child "
-                "relationship: ['/foo', '/bar']")
+                "relationship: [u'/foo', u'/bar']")

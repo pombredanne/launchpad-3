@@ -39,16 +39,13 @@ def streaming_sync(con, timeout=None):
     cur = con.cursor()
 
     # Force a WAL switch, returning the current position.
-    if con.server_version >= 100000:
-        cur.execute('SELECT pg_switch_wal()')
-    else:
-        cur.execute('SELECT pg_switch_xlog()')
+    cur.execute('SELECT pg_switch_wal()')
     wal_point = cur.fetchone()[0]
     start_time = time.time()
     while timeout is None or time.time() < start_time + timeout:
         cur.execute("""
             SELECT FALSE FROM pg_stat_replication
-            WHERE replay_location < %s LIMIT 1
+            WHERE replay_lsn < %s LIMIT 1
             """, (wal_point,))
         if cur.fetchone() is None:
             # All slaves, possibly 0, are in sync.
@@ -106,10 +103,7 @@ class DBController:
             try:
                 con = pg_connect(conn_str)
                 cur = con.cursor()
-                if con.server_version >= 100000:
-                    cur.execute('select pg_wal_replay_pause()')
-                else:
-                    cur.execute('select pg_xlog_replay_pause()')
+                cur.execute('select pg_wal_replay_pause()')
             except psycopg2.Error, x:
                 self.log.error(
                     'Unable to pause replication to %s (%s).'
@@ -125,10 +119,7 @@ class DBController:
             try:
                 con = pg_connect(conn_str)
                 cur = con.cursor()
-                if con.server_version >= 100000:
-                    cur.execute('select pg_wal_replay_resume()')
-                else:
-                    cur.execute('select pg_xlog_replay_resume()')
+                cur.execute('select pg_wal_replay_resume()')
             except psycopg2.Error, x:
                 success = False
                 self.log.error(
@@ -149,17 +140,11 @@ class DBController:
             try:
                 con = pg_connect(conn_str)
                 cur = con.cursor()
-                if con.server_version >= 100000:
-                    cur.execute("SELECT pg_is_wal_replay_paused()")
-                else:
-                    cur.execute("SELECT pg_is_xlog_replay_paused()")
+                cur.execute("SELECT pg_is_wal_replay_paused()")
                 replication_paused = cur.fetchone()[0]
                 if replication_paused:
                     self.log.warn("Replication paused on %s. Resuming.", name)
-                    if con.server_version >= 100000:
-                        cur.execute("SELECT pg_wal_replay_resume()")
-                    else:
-                        cur.execute("SELECT pg_xlog_replay_resume()")
+                    cur.execute("SELECT pg_wal_replay_resume()")
                     wait_for_sync = True
             except psycopg2.Error, x:
                 success = False

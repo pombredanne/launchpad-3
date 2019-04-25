@@ -3,10 +3,12 @@
 
 """Tests of the HWDB submissions parser."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import bz2
 from copy import deepcopy
-from cStringIO import StringIO
 from datetime import datetime
+import io
 import logging
 import os
 
@@ -397,7 +399,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser.submission_key = 'udev device with invalid path'
         self.assertFalse(parser.buildUdevDeviceList(parsed_data))
         self.assertErrorMessage(
-            parser.submission_key, "Invalid device path name: '/nonsense'")
+            parser.submission_key, "Invalid device path name: u'/nonsense'")
 
     def test_buildUdevDeviceList_missing_root_device(self):
         """Test the creation of UdevDevice instances for a submission.
@@ -1565,7 +1567,7 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
                          % found_bus)
         self.assertWarningMessage(
             parser.submission_key,
-            "Unknown bus 'nonsense' for device " + self.UDI_PCCARD_DEVICE)
+            "Unknown bus u'nonsense' for device " + self.UDI_PCCARD_DEVICE)
 
     def test_HALDevice_is_root_device_for_root_device(self):
         """Test of HALDevice.is_root_device for the root device."""
@@ -2147,13 +2149,13 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             ('pci.vendor_id',
              "A HALDevice that is supposed to be a real device does not "
              "provide bus, vendor ID, product ID or product name: <DBItem "
-             "HWBus.PCI, (1) PCI> None 28980 'Intel PCCard bridge 1234' "
+             "HWBus.PCI, (1) PCI> None 28980 u'Intel PCCard bridge 1234' "
              "/org/freedesktop/Hal/devices/pci_8086_27c5"
              ),
             ('pci.product_id',
              "A HALDevice that is supposed to be a real device does not "
              "provide bus, vendor ID, product ID or product name: "
-             "<DBItem HWBus.PCI, (1) PCI> 32902 None 'Intel PCCard bridge "
+             "<DBItem HWBus.PCI, (1) PCI> 32902 None u'Intel PCCard bridge "
              "1234' /org/freedesktop/Hal/devices/pci_8086_27c5"
              ),
             ('info.product',
@@ -4212,7 +4214,7 @@ class TestUdevDevice(TestCaseHWDB):
         # which a USB is not. Hence we get a warning.
         self.assertWarningMessage(
             parser.submission_key,
-            "Unknown bus 'usb_interface' for device "
+            "Unknown bus u'usb_interface' for device "
             "/devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0")
 
     def test_real_bus_pci(self):
@@ -4370,8 +4372,8 @@ class TestUdevDevice(TestCaseHWDB):
             parser.submission_key,
             "A UdevDevice that is supposed to be a real device does not "
             "provide bus, vendor ID, product ID or product name: "
-            "<DBItem HWBus.SYSTEM, (0) System> None 'LIFEBOOK E8210' "
-            "'LIFEBOOK E8210' /devices/LNXSYSTM:00")
+            "<DBItem HWBus.SYSTEM, (0) System> None u'LIFEBOOK E8210' "
+            "u'LIFEBOOK E8210' /devices/LNXSYSTM:00")
 
     def test_has_reliable_data_system_no_product_name(self):
         """Test of UdevDevice.has_reliable_data for a system.
@@ -4390,7 +4392,7 @@ class TestUdevDevice(TestCaseHWDB):
             parser.submission_key,
             "A UdevDevice that is supposed to be a real device does not "
             "provide bus, vendor ID, product ID or product name: "
-            "<DBItem HWBus.SYSTEM, (0) System> 'FUJITSU SIEMENS' None None "
+            "<DBItem HWBus.SYSTEM, (0) System> u'FUJITSU SIEMENS' None None "
             "/devices/LNXSYSTM:00")
 
     def test_has_reliable_data_acpi_device(self):
@@ -5078,6 +5080,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
     def createSubmissionData(self, data, compress, submission_key,
                              private=False):
         """Create a submission."""
+        if not isinstance(data, bytes):
+            data = data.encode('UTF-8')
         if compress:
             data = bz2.compress(data)
         switch_dbuser('launchpad')
@@ -5089,7 +5093,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             submission_key=submission_key,
             emailaddress=u'test@canonical.com',
             distroarchseries=None,
-            raw_submission=StringIO(data),
+            raw_submission=io.BytesIO(data),
             filename='hwinfo.xml',
             filesize=len(data),
             system_fingerprint='A Machine Name')
