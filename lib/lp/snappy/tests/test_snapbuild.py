@@ -46,6 +46,7 @@ from lp.services.macaroons.interfaces import (
     BadMacaroonContext,
     IMacaroonIssuer,
     )
+from lp.services.macaroons.testing import MacaroonTestMixin
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
@@ -785,7 +786,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             self.assertCanOpenRedirectedUrl(browser, file_url)
 
 
-class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
+class TestSnapBuildMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
     """Test SnapBuild macaroon issuing and verification."""
 
     layer = LaunchpadZopelessLayer
@@ -840,7 +841,7 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "snap-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertTrue(issuer.verifyMacaroon(macaroon, ref.repository))
+        self.assertMacaroonVerifies(issuer, macaroon, ref.repository)
 
     def test_verifyMacaroon_wrong_location(self):
         [ref] = self.factory.makeGitRefs(
@@ -852,7 +853,9 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
             getUtility(IMacaroonIssuer, "snap-build"))
         macaroon = Macaroon(
             location="another-location", key=issuer._root_secret)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+        self.assertMacaroonDoesNotVerify(
+            ["Macaroon has unknown location 'another-location'."],
+            issuer, macaroon, ref.repository)
 
     def test_verifyMacaroon_wrong_key(self):
         [ref] = self.factory.makeGitRefs(
@@ -864,7 +867,8 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
             getUtility(IMacaroonIssuer, "snap-build"))
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+        self.assertMacaroonDoesNotVerify(
+            ["Signatures do not match"], issuer, macaroon, ref.repository)
 
     def test_verifyMacaroon_refuses_branch(self):
         branch = self.factory.makeAnyBranch(
@@ -875,7 +879,8 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "snap-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, branch))
+        self.assertMacaroonDoesNotVerify(
+            ["Cannot handle context %r." % branch], issuer, macaroon, branch)
 
     def test_verifyMacaroon_not_building(self):
         [ref] = self.factory.makeGitRefs(
@@ -885,7 +890,9 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "snap-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.snap-build %s' failed." % build.id],
+            issuer, macaroon, ref.repository)
 
     def test_verifyMacaroon_wrong_build(self):
         [ref] = self.factory.makeGitRefs(
@@ -899,7 +906,9 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "snap-build"))
         macaroon = issuer.issueMacaroon(other_build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, ref.repository))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.snap-build %s' failed." % other_build.id],
+            issuer, macaroon, ref.repository)
 
     def test_verifyMacaroon_wrong_repository(self):
         [ref] = self.factory.makeGitRefs(
@@ -911,4 +920,6 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "snap-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, other_repository))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.snap-build %s' failed." % build.id],
+            issuer, macaroon, other_repository)

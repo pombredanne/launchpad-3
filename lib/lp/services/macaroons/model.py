@@ -95,22 +95,33 @@ class MacaroonIssuerBase:
         """
         raise NotImplementedError
 
-    def verifyMacaroon(self, macaroon, context, require_context=True):
+    def verifyMacaroon(self, macaroon, context, require_context=True,
+                       errors=None):
         """See `IMacaroonIssuer`."""
         if macaroon.location != config.vhost.mainsite.hostname:
+            if errors is not None:
+                errors.append(
+                    "Macaroon has unknown location '%s'." % macaroon.location)
             return False
         if require_context and context is None:
+            if errors is not None:
+                errors.append(
+                    "Expected macaroon verification context but got None.")
             return False
         if context is not None:
             try:
                 context = self.checkVerificationContext(context)
-            except BadMacaroonContext:
+            except BadMacaroonContext as e:
+                if errors is not None:
+                    errors.append(str(e))
                 return False
 
         def verify(caveat):
             try:
                 caveat_name, caveat_value = caveat.split(" ", 1)
             except ValueError:
+                if errors is not None:
+                    errors.append("Cannot parse caveat '%s'." % caveat)
                 return False
             if caveat_name == self._primary_caveat_name:
                 checker = self.verifyPrimaryCaveat
@@ -118,8 +129,14 @@ class MacaroonIssuerBase:
                 # XXX cjwatson 2019-04-09: For now we just fail closed if
                 # there are any other caveats, which is good enough for
                 # internal use.
+                if errors is not None:
+                    errors.append("Unhandled caveat name '%s'." % caveat_name)
                 return False
-            return checker(caveat_value, context)
+            if not checker(caveat_value, context):
+                if errors is not None:
+                    errors.append("Caveat check for '%s' failed." % caveat)
+                return False
+            return True
 
         try:
             verifier = Verifier()
@@ -130,5 +147,7 @@ class MacaroonIssuerBase:
         # but most of them are too broad to reasonably catch so we let them
         # turn into OOPSes for now.  Revisit this once
         # https://github.com/ecordell/pymacaroons/issues/51 is fixed.
-        except MacaroonVerificationFailedException:
+        except MacaroonVerificationFailedException as e:
+            if errors is not None and not errors:
+                errors.append(str(e))
             return False
