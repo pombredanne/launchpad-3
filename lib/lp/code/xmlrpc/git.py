@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for Git."""
@@ -40,7 +40,6 @@ from lp.code.errors import (
     InvalidNamespace,
     )
 from lp.code.interfaces.codehosting import LAUNCHPAD_ANONYMOUS
-from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitapi import IGitAPI
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
@@ -91,19 +90,8 @@ class GitAPI(LaunchpadXMLRPCView):
             issuer = getUtility(IMacaroonIssuer, macaroon.identifier)
         except ComponentLookupError:
             return False
-        if repository is not None:
-            if repository.repository_type != GitRepositoryType.IMPORTED:
-                return False
-            code_import = getUtility(ICodeImportSet).getByGitRepository(
-                repository)
-            if code_import is None:
-                return False
-            job = code_import.import_job
-            if job is None:
-                return False
-        else:
-            job = None
-        return issuer.verifyMacaroon(macaroon, job, require_context=False)
+        return issuer.verifyMacaroon(
+            macaroon, repository, require_context=False)
 
     def _performLookup(self, requester, path, auth_params):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
