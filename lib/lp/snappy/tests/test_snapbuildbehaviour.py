@@ -405,6 +405,17 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             }))
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_build_request_args(self):
+        snap = self.factory.makeSnap()
+        request = self.factory.makeSnapBuildRequest(snap=snap)
+        job = self.makeJob(snap=snap, build_request=request)
+        args = yield job.extraBuildArgs()
+        self.assertEqual(request.id, args["build_request_id"])
+        expected_timestamp = request.date_requested.replace(
+            microsecond=0, tzinfo=None).isoformat() + 'Z'
+        self.assertEqual(expected_timestamp, args["build_request_timestamp"])
+
+    @defer.inlineCallbacks
     def test_extraBuildArgs_git(self):
         # extraBuildArgs returns appropriate arguments if asked to build a
         # job for a Git branch.

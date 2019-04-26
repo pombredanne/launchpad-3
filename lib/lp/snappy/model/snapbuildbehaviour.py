@@ -142,6 +142,14 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 (build.snap.owner.name, build.snap.name))
         args["build_source_tarball"] = build.snap.build_source_tarball
         args["private"] = build.is_private
+        build_request = build.build_request
+        if build_request is not None:
+            # RFC3339 format for timestamp
+            # (matching snapd, SAS and snapcraft representation)
+            timestamp = build_request.date_requested.replace(
+                microsecond=0, tzinfo=None).isoformat() + 'Z'
+            args["build_request_id"] = build_request.id
+            args["build_request_timestamp"] = timestamp
         defer.returnValue(args)
 
     @defer.inlineCallbacks
