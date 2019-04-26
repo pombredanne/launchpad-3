@@ -583,6 +583,13 @@ class TestGitAPIMixin:
         self.assertHasRefPermissions(
             no_privileges, repository, [path], {path: []})
 
+    def test_checkRefPermissions_nonexistent_repository(self):
+        requester = self.factory.makePerson()
+        self.assertEqual(
+            faults.GitRepositoryNotFound("nonexistent"),
+            self.git_api.checkRefPermissions(
+                "nonexistent", [], {"uid": requester.id}))
+
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     """Tests for the implementation of `IGitAPI`."""

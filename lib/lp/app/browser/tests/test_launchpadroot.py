@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to ILaunchpadRoot."""
@@ -14,8 +14,8 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.beautifulsoup import (
-    BeautifulSoup,
-    SoupStrainer,
+    BeautifulSoup4 as BeautifulSoup,
+    SoupStrainer4 as SoupStrainer,
     )
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -93,7 +93,7 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         # Stub out the getRecentBlogPosts which fetches a blog feed using
         # urlfetch.
         view.getRecentBlogPosts = lambda: []
-        content = BeautifulSoup(view(), parseOnlyThese=SoupStrainer('a'))
+        content = BeautifulSoup(view(), parse_only=SoupStrainer('a'))
         self.assertTrue(
             content.find('a', href='+featuredprojects'),
             "Cannot find the +featuredprojects link on the first page")
@@ -142,8 +142,7 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
         view = create_initialized_view(root, 'index.html', principal=user)
         # Replace the blog posts so the view does not make a network request.
         view.getRecentBlogPosts = lambda: []
-        markup = BeautifulSoup(
-            view(), parseOnlyThese=SoupStrainer(id='document'))
+        markup = BeautifulSoup(view(), parse_only=SoupStrainer(id='document'))
         self.assertIs(False, view.has_watermark)
         self.assertIs(None, markup.find(True, id='watermark'))
         logo = markup.find(True, id='launchpad-logo-and-name')
@@ -177,8 +176,8 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
             view = create_initialized_view(root, 'index.html')
             view.getRecentBlogPosts = _get_blog_posts
             result = view()
-        markup = BeautifulSoup(result,
-            parseOnlyThese=SoupStrainer(id='homepage-blogposts'))
+        markup = BeautifulSoup(
+            result, parse_only=SoupStrainer(id='homepage-blogposts'))
         self.assertEqual(['called'], calls)
         items = markup.findAll('li', 'news')
         # Notice about launchpad being opened is always added at the end
@@ -204,7 +203,7 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
         view = create_initialized_view(root, 'index.html', principal=user)
         view.getRecentBlogPosts = _get_blog_posts
         markup = BeautifulSoup(
-            view(), parseOnlyThese=SoupStrainer(id='homepage'))
+            view(), parse_only=SoupStrainer(id='homepage'))
         self.assertEqual([], calls)
         self.assertIs(None, markup.find(True, id='homepage-blogposts'))
         # Even logged in users should get the launchpad intro text in the left
@@ -225,8 +224,8 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
         with anonymous_logged_in():
             view = create_initialized_view(root, 'index.html')
             result = view()
-        markup = BeautifulSoup(result,
-            parseOnlyThese=SoupStrainer(id='homepage-blogposts'))
+        markup = BeautifulSoup(
+            result, parse_only=SoupStrainer(id='homepage-blogposts'))
         items = markup.findAll('li', 'news')
         self.assertEqual(3, len(items))
 

@@ -5,6 +5,8 @@
 Run the view tests.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import logging
 import os
 import unittest
@@ -33,7 +35,8 @@ def test_suite():
     for filename in filenames:
         path = filename
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
+            path,
+            setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
             )

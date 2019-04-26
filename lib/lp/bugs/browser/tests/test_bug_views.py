@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Bug Views."""
@@ -37,7 +37,7 @@ from lp.registry.interfaces.accesspolicy import (
     IAccessPolicySource,
     )
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.beautifulsoup import BeautifulSoup4 as BeautifulSoup
 from lp.services.webapp.interfaces import IOpenLaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -247,7 +247,7 @@ class TestBugPortletSubscribers(TestCaseWithFactory):
         # a CSS class `css_class`.
         soup = BeautifulSoup(html)
         element = soup.find(attrs={'id': element_id})
-        return css_class in element.get('class', '').split(' ')
+        return css_class in element.get('class', [])
 
     def test_bug_mute_for_individual_structural_subscription(self):
         # If the person has a structural subscription to the pillar,
@@ -540,7 +540,7 @@ class TestBugSecrecyViews(TestCaseWithFactory):
             html = view.render()
             soup = BeautifulSoup(html)
         self.assertEqual(
-            u'Private', soup.find('label', text="Private"))
+            u'Private', soup.find('label', text="Private").string)
 
     def test_bugtask_view_user_with_grant_on_bug_for_private_product(self):
         # The regular bug view is properly rendered even if the user

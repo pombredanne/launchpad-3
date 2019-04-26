@@ -1,4 +1,4 @@
-# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the GitHub Issues BugTracker."""
@@ -138,12 +138,14 @@ class TestGitHub(TestCase):
         super(TestGitHub, self).setUp()
         self.addCleanup(getUtility(IGitHubRateLimit).clearCache)
         self.sample_bugs = [
-            {"id": 1, "state": "open", "labels": []},
-            {"id": 2, "state": "open", "labels": [{"name": "feature"}]},
-            {"id": 3, "state": "open",
+            {"id": 101, "number": 1, "state": "open", "labels": []},
+            {"id": 102, "number": 2, "state": "open",
+             "labels": [{"name": "feature"}]},
+            {"id": 103, "number": 3, "state": "open",
              "labels": [{"name": "feature"}, {"name": "ui"}]},
-            {"id": 4, "state": "closed", "labels": []},
-            {"id": 5, "state": "closed", "labels": [{"name": "feature"}]},
+            {"id": 104, "number": 4, "state": "closed", "labels": []},
+            {"id": 105, "number": 5, "state": "closed",
+             "labels": [{"name": "feature"}]},
             ]
 
     def test_implements_interface(self):
@@ -220,7 +222,7 @@ class TestGitHub(TestCase):
         self._addIssuesResponse()
         tracker = GitHub("https://github.com/user/repository/issues")
         self.assertEqual(
-            {bug["id"]: bug for bug in self.sample_bugs[:2]},
+            {bug["number"]: bug for bug in self.sample_bugs[:2]},
             tracker.getRemoteBugBatch(["1", "2"]))
         self.assertEqual(
             "https://api.github.com/repos/user/repository/issues?state=all",
@@ -233,7 +235,7 @@ class TestGitHub(TestCase):
         tracker = GitHub("https://github.com/user/repository/issues")
         since = datetime(2015, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
         self.assertEqual(
-            {bug["id"]: bug for bug in self.sample_bugs[:2]},
+            {bug["number"]: bug for bug in self.sample_bugs[:2]},
             tracker.getRemoteBugBatch(["1", "2"], last_accessed=since))
         self.assertEqual(
             "https://api.github.com/repos/user/repository/issues?"
@@ -246,10 +248,10 @@ class TestGitHub(TestCase):
         self._addIssuesResponse()
         tracker = GitHub("https://github.com/user/repository/issues")
         tracker.initializeRemoteBugDB(
-            [str(bug["id"]) for bug in self.sample_bugs])
+            [str(bug["number"]) for bug in self.sample_bugs])
         responses.reset()
         self.assertEqual(
-            {bug["id"]: bug for bug in self.sample_bugs[:2]},
+            {bug["number"]: bug for bug in self.sample_bugs[:2]},
             tracker.getRemoteBugBatch(["1", "2"]))
         self.assertEqual(0, len(responses.calls))
 
@@ -278,9 +280,9 @@ class TestGitHub(TestCase):
             callback=issues_callback, content_type="application/json")
         tracker = GitHub("https://github.com/user/repository/issues")
         self.assertEqual(
-            {bug["id"]: bug for bug in self.sample_bugs},
+            {bug["number"]: bug for bug in self.sample_bugs},
             tracker.getRemoteBugBatch(
-                [str(bug["id"]) for bug in self.sample_bugs]))
+                [str(bug["number"]) for bug in self.sample_bugs]))
         expected_urls = [
             "https://api.github.com/rate_limit",
             "https://api.github.com/repos/user/repository/issues?state=all",
@@ -293,9 +295,9 @@ class TestGitHub(TestCase):
     @responses.activate
     def test_status_open(self):
         self.sample_bugs = [
-            {"id": 1, "state": "open", "labels": []},
+            {"id": 101, "number": 1, "state": "open", "labels": []},
             # Labels do not affect status, even if names collide.
-            {"id": 2, "state": "open",
+            {"id": 102, "number": 2, "state": "open",
              "labels": [{"name": "feature"}, {"name": "closed"}]},
             ]
         _add_rate_limit_response("api.github.com")
@@ -314,9 +316,9 @@ class TestGitHub(TestCase):
     @responses.activate
     def test_status_closed(self):
         self.sample_bugs = [
-            {"id": 1, "state": "closed", "labels": []},
+            {"id": 101, "number": 1, "state": "closed", "labels": []},
             # Labels do not affect status, even if names collide.
-            {"id": 2, "state": "closed",
+            {"id": 102, "number": 2, "state": "closed",
              "labels": [{"name": "feature"}, {"name": "open"}]},
             ]
         _add_rate_limit_response("api.github.com")
@@ -339,7 +341,9 @@ class TestGitHubUpdateBugWatches(TestCaseWithFactory):
 
     @responses.activate
     def test_process_one(self):
-        remote_bug = {"id": 1234, "state": "open", "labels": []}
+        remote_bug = {
+            "id": 12345, "number": 1234, "state": "open", "labels": [],
+            }
         _add_rate_limit_response("api.github.com")
         responses.add(
             "GET", "https://api.github.com/repos/user/repository/issues/1234",
@@ -371,7 +375,7 @@ class TestGitHubUpdateBugWatches(TestCaseWithFactory):
     @responses.activate
     def test_process_many(self):
         remote_bugs = [
-            {"id": bug_id,
+            {"id": bug_id + 1, "number": bug_id,
              "state": "open" if (bug_id % 2) == 0 else "closed",
              "labels": []}
             for bug_id in range(1000, 1010)]
@@ -385,7 +389,7 @@ class TestGitHubUpdateBugWatches(TestCaseWithFactory):
             bugtrackertype=BugTrackerType.GITHUB)
         for remote_bug in remote_bugs:
             bug.addWatch(
-                bug_tracker, str(remote_bug["id"]),
+                bug_tracker, str(remote_bug["number"]),
                 getUtility(ILaunchpadCelebrities).janitor)
         transaction.commit()
         logger = BufferLogger()

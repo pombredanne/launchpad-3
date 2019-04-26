@@ -62,7 +62,10 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.interfaces.client import ILibrarianClient
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.testing import MacaroonTestMixin
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -1291,7 +1294,7 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         job = self.makeJob(target_rcs_type=TargetRevisionControlSystems.BZR)
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         self.assertRaises(
-            ValueError, removeSecurityProxy(issuer).issueMacaroon, job)
+            BadMacaroonContext, removeSecurityProxy(issuer).issueMacaroon, job)
 
     def test_issueMacaroon_good(self):
         job = self.makeJob()
@@ -1315,7 +1318,7 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         authserver = AuthServerAPIView(private_root.authserver, TestRequest())
         self.assertEqual(
             faults.PermissionDenied(),
-            authserver.issueMacaroon("code-import-job", job))
+            authserver.issueMacaroon("code-import-job", "CodeImportJob", job))
 
     def test_verifyMacaroon_good(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1370,9 +1373,9 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
         self.assertMacaroonDoesNotVerify(
-            ["Signatures do not match."], issuer, macaroon, job)
+            ["Signatures do not match"], issuer, macaroon, job)
         self.assertMacaroonDoesNotVerify(
-            ["Signatures do not match."],
+            ["Signatures do not match"],
             issuer, macaroon, job, require_context=False)
 
     def test_verifyMacaroon_hosted_repository(self):

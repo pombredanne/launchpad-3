@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This file is imported by _pythonpath.py and by the standard Launchpad
@@ -70,11 +70,11 @@ def add_custom_loglevels():
             logger.parent = new_root
 
 
-def silence_amqplib_logger():
-    """Install the NullHandler on the amqplib logger to silence logs."""
-    amqplib_logger = logging.getLogger('amqplib')
-    amqplib_logger.addHandler(logging.NullHandler())
-    amqplib_logger.propagate = False
+def silence_amqp_logger():
+    """Install the NullHandler on the amqp logger to silence logs."""
+    amqp_logger = logging.getLogger('amqp')
+    amqp_logger.addHandler(logging.NullHandler())
+    amqp_logger.propagate = False
 
 
 def silence_bzr_logger():
@@ -153,7 +153,7 @@ def customize_logger():
     This function is also invoked by the test infrastructure to reset
     logging between tests.
     """
-    silence_amqplib_logger()
+    silence_amqp_logger()
     silence_bzr_logger()
     silence_zcml_logger()
     silence_transaction_logger()

@@ -7,11 +7,22 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'BadMacaroonContext',
     'IMacaroonIssuer',
     ]
 
 from zope.interface import Interface
 from zope.schema import Bool
+
+
+class BadMacaroonContext(Exception):
+    """The requested context is unsuitable."""
+
+    def __init__(self, context, message=None):
+        if message is None:
+            message = "Cannot handle context %r." % context
+        super(BadMacaroonContext, self).__init__(message)
+        self.context = context
 
 
 class IMacaroonIssuerPublic(Interface):
@@ -20,7 +31,7 @@ class IMacaroonIssuerPublic(Interface):
     issuable_via_authserver = Bool(
         "Does this issuer allow issuing macaroons via the authserver?")
 
-    def verifyMacaroon(macaroon, context, require_context=True):
+    def verifyMacaroon(macaroon, context, require_context=True, errors=None):
         """Verify that `macaroon` is valid for `context`.
 
         :param macaroon: A `Macaroon`.
@@ -30,6 +41,8 @@ class IMacaroonIssuerPublic(Interface):
             verify that the macaroon could be valid for some context.  Use
             this in the authentication part of an
             authentication/authorisation API.
+        :param errors: If non-None, any verification error messages will be
+            appended to this list.
         :return: True if `macaroon` is valid for `context`, otherwise False.
         """
 
@@ -42,6 +55,6 @@ class IMacaroonIssuer(IMacaroonIssuerPublic):
 
         :param context: The context that the returned macaroon should relate
             to.
-        :raises ValueError: if the context is unsuitable.
+        :raises BadMacaroonContext: if the context is unsuitable.
         :return: A macaroon.
         """

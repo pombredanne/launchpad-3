@@ -57,7 +57,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 
 
@@ -428,7 +431,8 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
     def checkIssuingContext(self, context):
         """See `MacaroonIssuerBase`."""
         if context.code_import.git_repository is None:
-            raise ValueError("context.code_import.git_repository is None")
+            raise BadMacaroonContext(
+                context, "context.code_import.git_repository is None")
         return context.id
 
     def checkVerificationContext(self, context):
@@ -442,16 +446,19 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
         """
         if IGitRepository.providedBy(context):
             if context.repository_type != GitRepositoryType.IMPORTED:
-                raise ValueError("%r is not an IMPORTED repository." % context)
+                raise BadMacaroonContext(
+                    context, "%r is not an IMPORTED repository." % context)
             code_import = getUtility(ICodeImportSet).getByGitRepository(
                 context)
             if code_import is None:
-                raise ValueError("%r does not have a code import." % context)
+                raise BadMacaroonContext(
+                    context, "%r does not have a code import." % context)
             context = code_import.import_job
         if not ICodeImportJob.providedBy(context):
-            raise ValueError("Cannot handle context %r." % context)
+            raise BadMacaroonContext(context)
         if context.state != CodeImportJobState.RUNNING:
-            raise ValueError("%r is not in the RUNNING state." % context)
+            raise BadMacaroonContext(
+                context, "%r is not in the RUNNING state." % context)
         return context
 
     def verifyPrimaryCaveat(self, caveat_value, context):
