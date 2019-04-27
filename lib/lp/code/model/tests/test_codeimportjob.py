@@ -34,6 +34,7 @@ from lp.code.enums import (
     CodeImportJobState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    GitRepositoryType,
     TargetRevisionControlSystems,
     )
 from lp.code.interfaces.codehosting import (
@@ -1326,6 +1327,7 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
         self.assertMacaroonVerifies(issuer, macaroon, job)
+        self.assertMacaroonVerifies(issuer, macaroon, job.code_import.target)
 
     def test_verifyMacaroon_good_no_context(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1335,6 +1337,8 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
         self.assertMacaroonVerifies(
             issuer, macaroon, job, require_context=False)
+        self.assertMacaroonVerifies(
+            issuer, macaroon, job.code_import.target, require_context=False)
 
     def test_verifyMacaroon_no_context_but_require_context(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1374,6 +1378,25 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
             ["Signatures do not match"],
             issuer, macaroon, job, require_context=False)
 
+    def test_verifyMacaroon_hosted_repository(self):
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        repository = self.factory.makeGitRepository()
+        self.assertMacaroonDoesNotVerify(
+            ["%r is not an IMPORTED repository." % repository],
+            issuer, macaroon, repository)
+
+    def test_verifyMacaroon_repository_with_no_code_import(self):
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        repository = self.factory.makeGitRepository(
+            repository_type=GitRepositoryType.IMPORTED)
+        self.assertMacaroonDoesNotVerify(
+            ["%r does not have a code import." % repository],
+            issuer, macaroon, repository)
+
     def test_verifyMacaroon_not_running(self):
         job = self.makeJob()
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
@@ -1381,6 +1404,9 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         self.assertMacaroonDoesNotVerify(
             ["%r is not in the RUNNING state." % job],
             issuer, macaroon, job)
+        self.assertMacaroonDoesNotVerify(
+            ["%r is not in the RUNNING state." % job],
+            issuer, macaroon, job.code_import.target)
 
     def test_verifyMacaroon_wrong_job(self):
         machine = self.factory.makeCodeImportMachine(set_online=True)
@@ -1393,3 +1419,7 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
             ["Caveat check for 'lp.code-import-job %s' failed." %
              other_job.id],
             issuer, macaroon, job)
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.code-import-job %s' failed." %
+             other_job.id],
+            issuer, macaroon, job.code_import.target)
