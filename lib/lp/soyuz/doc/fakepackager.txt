@@ -112,7 +112,7 @@ Now we can build the source package using the generated tarball.
     ...
      ... devel optional biscuit_1.0-1.dsc
      ... devel optional biscuit_1.0.orig.tar.gz
-     ... devel optional biscuit_1.0-1.diff.gz
+     ... devel optional biscuit_1.0-1.diff.gz...
     <BLANKLINE>
 
 When we try to build an incompatible package version an error will be

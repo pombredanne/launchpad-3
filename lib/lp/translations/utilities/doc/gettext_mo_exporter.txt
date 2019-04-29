@@ -88,16 +88,19 @@ When we export more than one file, we get a tarball.
     >>> tarfile = string_to_tarfile(file_content)
     >>> for member in tarfile.getmembers():
     ...     if member.isreg():
-    ...         lines = len(tarfile.extractfile(member).readlines())
+    ...         size = len(tarfile.extractfile(member).read())
+    ...         desc = 'non-empty' if size else 'empty'
+    ...     elif member.isdir():
+    ...         desc = 'dir'
     ...     else:
-    ...         lines = 0
-    ...     print "| %5d | %s" % (lines, member.name)
-    |     0 | es
-    |     0 | es/LC_MESSAGES
-    |    12 | es/LC_MESSAGES/foo.mo
-    |     0 | sr
-    |     0 | sr/LC_MESSAGES
-    |    12 | sr/LC_MESSAGES/foo.mo
+    ...         desc = 'unknown'
+    ...     print "| %9s | %s" % (desc, member.name)
+    | dir       | es
+    | dir       | es/LC_MESSAGES
+    | non-empty | es/LC_MESSAGES/foo.mo
+    | dir       | sr
+    | dir       | sr/LC_MESSAGES
+    | non-empty | sr/LC_MESSAGES/foo.mo
 
 
 == PO compiler helper class ==
