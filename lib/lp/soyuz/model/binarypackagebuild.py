@@ -1387,7 +1387,7 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
         # the named build directly.
         return "lp.principal.binary-package-build"
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `IBinaryPackageBuild`.
@@ -1397,13 +1397,13 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
                 context, "Refusing to issue macaroon for public build.")
         return removeSecurityProxy(context).id
 
-    def checkVerificationContext(self, context):
+    def checkVerificationContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if not ILibraryFileAlias.providedBy(context):
             raise BadMacaroonContext(context)
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For verification, the context is an `ILibraryFileAlias`.  We check

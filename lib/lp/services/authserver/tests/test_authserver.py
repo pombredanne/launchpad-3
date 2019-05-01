@@ -89,19 +89,19 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
     issuable_via_authserver = True
     _root_secret = 'test'
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if not ILibraryFileAlias.providedBy(context):
             raise BadMacaroonContext(context)
         return context.id
 
-    def checkVerificationContext(self, context):
+    def checkVerificationContext(self, context, **kwargs):
         """See `IMacaroonIssuerBase`."""
         if not ILibraryFileAlias.providedBy(context):
             raise BadMacaroonContext(context)
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         return caveat_value == str(context.id)
 

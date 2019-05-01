@@ -25,6 +25,31 @@ class MacaroonIssuerBase:
 
     issuable_via_authserver = False
 
+    # A mapping of caveat names to "checker" callables that verify the
+    # corresponding caveat text.  The signature of each checker is
+    # (caveat_value, context, **kwargs) -> bool, where caveat_value is the
+    # text of the caveat with the caveat name removed, context is the
+    # issuer-specific context to check, and kwargs is any other keyword
+    # arguments that were given to verifyMacaroon; it should return True if
+    # the caveat is allowed, otherwise False.
+    #
+    # The context passed in may be None, in which case the checker may
+    # choose to only verify that the caveat could be valid for some context,
+    # or may simply return False if this is unsupported.  This is useful for
+    # issuers that support APIs with separate authentication and
+    # authorisation phases.
+    #
+    # The "primary context caveat" added to all macaroons issued by this
+    # base class does not need to be listed here; it is handled by the
+    # verifyContextCaveat method.
+    checkers = {}
+
+    # Caveat names in this set may appear more than once (in which case they
+    # have the usual subtractive semantics, so the union of all the
+    # constraints they express applies).  Any other caveats may only appear
+    # once.
+    allow_multiple = set()
+
     @property
     def identifier(self):
         """An identifying name for this issuer."""
@@ -43,7 +68,7 @@ class MacaroonIssuerBase:
                 "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """Check that the issuing context is suitable.
 
         Concrete implementations may implement this method to check that the
@@ -52,18 +77,16 @@ class MacaroonIssuerBase:
         was passed in or an adapted one.
 
         :param context: The context to check.
+        :param kwargs: Additional arguments that issuers may require to
+            issue a macaroon.
         :raises BadMacaroonContext: if the context is unsuitable.
         :return: The context to use to create the primary caveat.
         """
         return context
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`.
-
-        Concrete implementations should normally wrap this with some
-        additional checks of and/or changes to the context.
-        """
-        context = self.checkIssuingContext(context)
+    def issueMacaroon(self, context, **kwargs):
+        """See `IMacaroonIssuer`."""
+        context = self.checkIssuingContext(context, **kwargs)
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname,
             identifier=self.identifier, key=self._root_secret)
@@ -71,7 +94,7 @@ class MacaroonIssuerBase:
             "%s %s" % (self._primary_caveat_name, context))
         return macaroon
 
-    def checkVerificationContext(self, context):
+    def checkVerificationContext(self, context, **kwargs):
         """Check that the verification context is suitable.
 
         Concrete implementations may implement this method to check that the
@@ -80,23 +103,27 @@ class MacaroonIssuerBase:
         context that was passed in or an adapted one.
 
         :param context: The context to check.
+        :param kwargs: Additional arguments that issuers may require to
+            verify a macaroon.
         :raises BadMacaroonContext: if the context is unsuitable.
         :return: The context to pass to individual caveat checkers.
         """
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """Verify the primary context caveat on one of this issuer's macaroons.
 
-        :param caveat_value: The text of the caveat, with this issuer's
-            prefix removed.
+        :param caveat_value: The text of the caveat with the caveat name
+            removed.
         :param context: The context to check.
+        :param kwargs: Additional arguments that issuers may require to
+            verify a macaroon.
         :return: True if this caveat is allowed, otherwise False.
         """
         raise NotImplementedError
 
     def verifyMacaroon(self, macaroon, context, require_context=True,
-                       errors=None):
+                       errors=None, **kwargs):
         """See `IMacaroonIssuer`."""
         if macaroon.location != config.vhost.mainsite.hostname:
             if errors is not None:
@@ -115,6 +142,7 @@ class MacaroonIssuerBase:
                 if errors is not None:
                     errors.append(str(e))
                 return False
+        seen = set()
 
         def verify(caveat):
             try:
@@ -123,16 +151,22 @@ class MacaroonIssuerBase:
                 if errors is not None:
                     errors.append("Cannot parse caveat '%s'." % caveat)
                 return False
+            if caveat_name not in self.allow_multiple and caveat_name in seen:
+                if errors is not None:
+                    errors.append(
+                        "Multiple '%s' caveats are not allowed." % caveat_name)
+                return False
+            seen.add(caveat_name)
             if caveat_name == self._primary_caveat_name:
                 checker = self.verifyPrimaryCaveat
             else:
-                # XXX cjwatson 2019-04-09: For now we just fail closed if
-                # there are any other caveats, which is good enough for
-                # internal use.
-                if errors is not None:
-                    errors.append("Unhandled caveat name '%s'." % caveat_name)
-                return False
-            if not checker(caveat_value, context):
+                checker = self.checkers.get(caveat_name)
+                if checker is None:
+                    if errors is not None:
+                        errors.append(
+                            "Unhandled caveat name '%s'." % caveat_name)
+                    return False
+            if not checker(caveat_value, context, **kwargs):
                 if errors is not None:
                     errors.append("Caveat check for '%s' failed." % caveat)
                 return False
