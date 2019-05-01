@@ -1,4 +1,4 @@
-# Copyright 2012-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for running jobs via Celery."""
@@ -33,7 +33,10 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.job.tests import block_on_job
+from lp.services.job.tests import (
+    block_on_job,
+    monitor_celery,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import CeleryJobLayer
 
@@ -202,3 +205,19 @@ class TestJobsViaCelery(TestCaseWithFactory):
                 ]))
         self.assertEqual(3, job.attempt_count)
         self.assertEqual(JobStatus.COMPLETED, job.status)
+
+    def test_without_rabbitmq(self):
+        # If no RabbitMQ host is configured, the job is not run via Celery.
+        self.pushConfig('rabbitmq', host='none')
+        self.useFixture(FeatureFixture({
+            'jobs.celery.enabled_classes': 'TestJob'
+        }))
+        with monitor_celery() as responses:
+            job = TestJob()
+            job.celeryRunOnCommit()
+            job_id = job.job_id
+            transaction.commit()
+        self.assertEqual([], responses)
+        store = IStore(Job)
+        dbjob = store.find(Job, id=job_id)[0]
+        self.assertEqual(JobStatus.WAITING, dbjob.status)

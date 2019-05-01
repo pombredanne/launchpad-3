@@ -78,6 +78,14 @@ def configure(argv):
         # fixed once the CELERYD_TASK_SOFT_TIME_LIMIT override is gone.
         result['worker_concurrency'] = config[queue].concurrency
 
+    # Don't spend too long failing when RabbitMQ isn't running.  We can fall
+    # back to waiting for the job to be run via cron.
+    result['broker_transport_options'] = {
+        'max_retries': 3,
+        'interval_start': 0,
+        'interval_step': 0.1,
+        'interval_max': 0.1,
+        }
     result['broker_url'] = 'amqp://%s:%s@%s/%s' % (
         config.rabbitmq.userid, config.rabbitmq.password,
         config.rabbitmq.host, config.rabbitmq.virtual_host)
