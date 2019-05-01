@@ -77,6 +77,8 @@ class MacaroonIssuerBase:
         was passed in or an adapted one.
 
         :param context: The context to check.
+        :param kwargs: Additional arguments that issuers may require to
+            issue a macaroon.
         :raises BadMacaroonContext: if the context is unsuitable.
         :return: The context to use to create the primary caveat.
         """

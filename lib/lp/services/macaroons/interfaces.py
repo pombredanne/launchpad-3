@@ -58,8 +58,8 @@ class IMacaroonIssuer(IMacaroonIssuerPublic):
 
         :param context: The context that the returned macaroon should relate
             to.
-        :param kwargs: Additional arguments that issuers may require to issue
-            a macaroon.
+        :param kwargs: Additional arguments that issuers may require to
+            issue a macaroon.
         :raises BadMacaroonContext: if the context is unsuitable.
         :return: A macaroon.
         """
