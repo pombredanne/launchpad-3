@@ -3943,7 +3943,8 @@ class TestGitRepositoryMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
                 MatchesStructure.byEquality(
                     caveat_id="lp.git-repository %s" % repository.id),
                 MatchesStructure.byEquality(
-                    caveat_id="lp.openid-identifier %s" % identifier),
+                    caveat_id=(
+                        "lp.principal.openid-identifier %s" % identifier)),
                 MatchesStructure.byEquality(
                     caveat_id="lp.expires %s" % (
                         expires.strftime("%Y-%m-%dT%H:%M:%S.%f"))),
@@ -4036,7 +4037,7 @@ class TestGitRepositoryMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         macaroon = removeSecurityProxy(issuer).issueMacaroon(
             repository, user=repository.owner)
         self.assertMacaroonDoesNotVerify(
-            ["Caveat check for 'lp.openid-identifier %s' failed." %
+            ["Caveat check for 'lp.principal.openid-identifier %s' failed." %
              identifier],
             issuer, macaroon, repository, user=self.factory.makePerson())
 
@@ -4054,7 +4055,7 @@ class TestGitRepositoryMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
             OpenIdIdentifier,
             OpenIdIdentifier.account_id == owner.account.id).remove()
         self.assertMacaroonDoesNotVerify(
-            ["Caveat check for 'lp.openid-identifier %s' failed." %
+            ["Caveat check for 'lp.principal.openid-identifier %s' failed." %
              identifier],
             issuer, macaroon, repository, user=owner)
 
@@ -4063,9 +4064,11 @@ class TestGitRepositoryMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "git-repository")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(
             repository, user=repository.owner)
-        macaroon.add_first_party_caveat("lp.openid-identifier another")
+        macaroon.add_first_party_caveat(
+            "lp.principal.openid-identifier another")
         self.assertMacaroonDoesNotVerify(
-            ["Multiple 'lp.openid-identifier' caveats are not allowed."],
+            ["Multiple 'lp.principal.openid-identifier' caveats are not "
+             "allowed."],
             issuer, macaroon, repository, user=repository.owner)
 
     def test_verifyMacaroon_expired(self):

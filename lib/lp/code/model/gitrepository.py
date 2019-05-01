@@ -1783,7 +1783,7 @@ class GitRepositoryMacaroonIssuer(MacaroonIssuerBase):
     def __init__(self):
         super(GitRepositoryMacaroonIssuer, self).__init__()
         self.checkers = {
-            "lp.openid-identifier": self.verifyOpenIDIdentifier,
+            "lp.principal.openid-identifier": self.verifyOpenIDIdentifier,
             "lp.expires": self.verifyExpires,
             }
 
@@ -1806,7 +1806,7 @@ class GitRepositoryMacaroonIssuer(MacaroonIssuerBase):
             context, user=user, **kwargs)
         naked_account = removeSecurityProxy(user).account
         macaroon.add_first_party_caveat(
-            "lp.openid-identifier " +
+            "lp.principal.openid-identifier " +
             naked_account.openid_identifiers.any().identifier)
         store = IStore(GitRepository)
         # XXX cjwatson 2019-04-09: Expire macaroons after the number of
@@ -1844,7 +1844,7 @@ class GitRepositoryMacaroonIssuer(MacaroonIssuerBase):
         return caveat_value == str(context.id)
 
     def verifyOpenIDIdentifier(self, caveat_value, context, **kwargs):
-        """Verify an lp.openid-identifier caveat."""
+        """Verify an lp.principal.openid-identifier caveat."""
         user = kwargs.get("user")
         try:
             account = getUtility(IAccountSet).getByOpenIDIdentifier(
