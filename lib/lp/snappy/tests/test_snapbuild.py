@@ -42,7 +42,10 @@ from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.testing import MacaroonTestMixin
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
@@ -798,7 +801,8 @@ class TestSnapBuildMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         build = self.factory.makeSnapBuild()
         issuer = getUtility(IMacaroonIssuer, "snap-build")
         self.assertRaises(
-            ValueError, removeSecurityProxy(issuer).issueMacaroon, build)
+            BadMacaroonContext, removeSecurityProxy(issuer).issueMacaroon,
+            build)
 
     def test_issueMacaroon_good(self):
         build = self.factory.makeSnapBuild(
@@ -819,7 +823,7 @@ class TestSnapBuildMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         private_root = getUtility(IPrivateApplication)
         authserver = AuthServerAPIView(private_root.authserver, TestRequest())
         macaroon = Macaroon.deserialize(
-            authserver.issueMacaroon("snap-build", build.id))
+            authserver.issueMacaroon("snap-build", "SnapBuild", build.id))
         self.assertThat(macaroon, MatchesStructure(
             location=Equals("launchpad.dev"),
             identifier=Equals("snap-build"),
@@ -864,7 +868,7 @@ class TestSnapBuildMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
         self.assertMacaroonDoesNotVerify(
-            ["Signatures do not match."], issuer, macaroon, ref.repository)
+            ["Signatures do not match"], issuer, macaroon, ref.repository)
 
     def test_verifyMacaroon_refuses_branch(self):
         branch = self.factory.makeAnyBranch(

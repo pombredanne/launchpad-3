@@ -792,9 +792,11 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         linked to any bugs, specs, productseries, or code imports.
         """
 
-    def deletionRequirements():
+    def deletionRequirements(eager_load=False):
         """Determine what is required to delete this branch.
 
+        :param eager_load: If True, preload related information needed to
+            display the deletion requirements.
         :return: a dict of {object: (operation, reason)}, where object is the
             object that must be deleted or altered, operation is either
             "delete" or "alter", and reason is a string explaining why the
@@ -1117,6 +1119,14 @@ class IBranchModerate(Interface):
     @operation_for_version('devel')
     def unscan(rescan=True):
         """Reset this branch's scan data and optionally request a scan."""
+
+    @export_write_operation()
+    @operation_for_version('devel')
+    def rescan():
+        """Reset this branch's scan data and request a rescan.
+
+        A convenience function wrapper around unscan().
+        """
 
 
 class IBranchEditableAttributes(Interface):

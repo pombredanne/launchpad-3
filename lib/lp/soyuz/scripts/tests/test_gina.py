@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -20,8 +20,8 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
-from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.services.osutils import write_file
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina import ExecutionError
 from lp.soyuz.scripts.gina.archive import (
@@ -276,8 +276,10 @@ class TestSourcePackageData(TestCaseWithFactory):
         # Unpacking this in an Ubuntu context fails.
         self.assertRaises(
             ExecutionError, sp_data.do_package, "ubuntu", archive_root)
+        self.assertFalse(os.path.exists("foo-1.0"))
         # But all is well in a Debian context.
         sp_data.do_package("debian", archive_root)
+        self.assertFalse(os.path.exists("foo-1.0"))
 
     def test_process_package_cleans_up_after_unpack_failure(self):
         archive_root = self.useTempDir()

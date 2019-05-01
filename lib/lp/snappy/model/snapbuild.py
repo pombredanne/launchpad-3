@@ -67,7 +67,10 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.services.propertycache import (
     cachedproperty,
@@ -599,22 +602,19 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
     def checkIssuingContext(self, context):
         """See `MacaroonIssuerBase`.
 
-        For issuing, the context is an `ISnapBuild` or its ID.
+        For issuing, the context is an `ISnapBuild`.
         """
-        if ISnapBuild.providedBy(context):
-            pass
-        elif isinstance(context, int):
-            context = getUtility(ISnapBuildSet).getByID(context)
-        else:
-            raise ValueError("Cannot handle context %r." % context)
+        if not ISnapBuild.providedBy(context):
+            raise BadMacaroonContext(context)
         if not removeSecurityProxy(context).is_private:
-            raise ValueError("Refusing to issue macaroon for public build.")
+            raise BadMacaroonContext(
+                context, "Refusing to issue macaroon for public build.")
         return removeSecurityProxy(context).id
 
     def checkVerificationContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if not IGitRepository.providedBy(context):
-            raise ValueError("Cannot handle context %r." % context)
+            raise BadMacaroonContext(context)
         return context
 
     def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):

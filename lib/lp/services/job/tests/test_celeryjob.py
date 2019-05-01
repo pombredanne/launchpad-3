@@ -1,4 +1,4 @@
-# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from cStringIO import StringIO
@@ -29,13 +29,11 @@ class TestRunMissingJobs(TestCaseWithFactory):
     def setUp(self):
         super(TestRunMissingJobs, self).setUp()
         from lp.services.job.celeryjob import (
-            CeleryRunJob,
             find_missing_ready,
-            RunMissingReady,
-        )
-        self.CeleryRunJob = CeleryRunJob
+            run_missing_ready,
+            )
         self.find_missing_ready = find_missing_ready
-        self.RunMissingReady = RunMissingReady
+        self.run_missing_ready = run_missing_ready
 
     def createMissingJob(self):
         job = BranchScanJob.create(self.factory.makeBranch())
@@ -108,7 +106,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         with monitor_celery() as responses:
             with dbuser('run_missing_ready'):
                 with TransactionFreeOperation.require():
-                    self.RunMissingReady().run(_no_init=True)
+                    self.run_missing_ready.run(_no_init=True)
         self.assertEqual([], responses)
 
     def test_run_missing_ready(self):
@@ -119,7 +117,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         with monitor_celery() as responses:
             with dbuser('run_missing_ready'):
                 with TransactionFreeOperation.require():
-                    self.RunMissingReady().run(_no_init=True)
+                    self.run_missing_ready.run(_no_init=True)
         self.assertEqual(1, len(responses))
 
     def test_run_missing_ready_does_not_return_results(self):
@@ -127,7 +125,7 @@ class TestRunMissingJobs(TestCaseWithFactory):
         result queue."""
         from lp.services.job.tests.celery_helpers import noop
         job_queue_name = 'celerybeat'
-        request = self.RunMissingReady().apply_async(
+        request = self.run_missing_ready.apply_async(
             kwargs={'_no_init': True}, queue=job_queue_name)
         self.assertTrue(request.task_id.startswith('RunMissingReady_'))
         result_queue_name = request.task_id.replace('-', '')
@@ -136,15 +134,15 @@ class TestRunMissingJobs(TestCaseWithFactory):
         # This would also happen when "with celery_worker()" would do nothing.
         # So let's be sure that a task is queued...
         # Give the system some time to deliver the message
-        self.assertQueueSize(self.RunMissingReady.app, [job_queue_name], 1)
+        self.assertQueueSize(self.run_missing_ready.app, [job_queue_name], 1)
         # Wait at most 60 seconds for "celery worker" to start and process
         # the task.
         with celery_worker(job_queue_name):
             # Due to FIFO ordering, this will only return after
-            # RunMissingReady has finished.
+            # run_missing_ready has finished.
             noop.apply_async(queue=job_queue_name).wait(60)
         # But now the message has been consumed by "celery worker".
-        self.assertQueueSize(self.RunMissingReady.app, [job_queue_name], 0)
+        self.assertQueueSize(self.run_missing_ready.app, [job_queue_name], 0)
         # No result queue was created for the task.
         try:
             real_stdout = sys.stdout

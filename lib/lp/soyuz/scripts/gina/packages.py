@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package information classes.
@@ -105,14 +105,16 @@ def get_dsc_path(name, version, component, archive_root):
 def unpack_dsc(package, version, component, distro_name, archive_root):
     dsc_name, dsc_path, component = get_dsc_path(package, version,
                                                  component, archive_root)
-    try:
-        extract_dpkg_source(dsc_path, ".", vendor=distro_name)
-    except DpkgSourceError as e:
-        raise ExecutionError("Error %d unpacking source" % e.result)
-
     version = re.sub("^\d+:", "", version)
     version = re.sub("-[^-]+$", "", version)
     source_dir = "%s-%s" % (package, version)
+    try:
+        extract_dpkg_source(dsc_path, ".", vendor=distro_name)
+    except DpkgSourceError as e:
+        if os.path.isdir(source_dir):
+            shutil.rmtree(source_dir)
+        raise ExecutionError("Error %d unpacking source" % e.result)
+
     return source_dir, dsc_path
 
 
@@ -120,28 +122,31 @@ def read_dsc(package, version, component, distro_name, archive_root):
     source_dir, dsc_path = unpack_dsc(package, version, component,
                                       distro_name, archive_root)
 
-    dsc = open(dsc_path).read().strip()
+    try:
+        dsc = open(dsc_path).read().strip()
 
-    fullpath = os.path.join(source_dir, "debian", "changelog")
-    changelog = None
-    if os.path.exists(fullpath):
-        changelog = open(fullpath).read().strip()
-    else:
-        log.warn("No changelog file found for %s in %s" %
-                 (package, source_dir))
+        fullpath = os.path.join(source_dir, "debian", "changelog")
         changelog = None
+        if os.path.exists(fullpath):
+            changelog = open(fullpath).read().strip()
+        else:
+            log.warn("No changelog file found for %s in %s" %
+                     (package, source_dir))
+            changelog = None
 
-    copyright = None
-    globpath = os.path.join(source_dir, "debian", "*copyright")
-    for fullpath in glob.glob(globpath):
-        if not os.path.exists(fullpath):
-            continue
-        copyright = open(fullpath).read().strip()
+        copyright = None
+        globpath = os.path.join(source_dir, "debian", "*copyright")
+        for fullpath in glob.glob(globpath):
+            if not os.path.exists(fullpath):
+                continue
+            copyright = open(fullpath).read().strip()
 
-    if copyright is None:
-        log.warn(
-            "No copyright file found for %s in %s" % (package, source_dir))
-        copyright = ''
+        if copyright is None:
+            log.warn(
+                "No copyright file found for %s in %s" % (package, source_dir))
+            copyright = ''
+    finally:
+        shutil.rmtree(source_dir)
 
     return dsc, changelog, copyright
 

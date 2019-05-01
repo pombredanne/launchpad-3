@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import base64
@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.gpg.interfaces import (
+    get_gpg_path,
     GPGKeyDoesNotExistOnServer,
     GPGKeyMismatchOnServer,
     GPGKeyTemporarilyNotFoundError,
@@ -193,6 +194,64 @@ class TestGPGHandler(TestCase):
             GPGKeyMismatchOnServer, gpghandler.retrieveKey, fingerprint)
         self.assertEqual([], list(gpghandler.localKeys()))
 
+    def test_retrieveKey_allows_subkey(self):
+        # retrieveKey allows retrieving keys by subkey fingerprint.
+        keyserver = self.useFixture(KeyServerTac())
+        primary_fingerprint = "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+        subkey_fingerprint = "A2E916260726EE2BF86501A14244E5A6067595FF"
+        shutil.copy2(
+            test_pubkey_file_from_email("foo.bar@canonical.com"),
+            os.path.join(keyserver.root, "0x%s.get" % subkey_fingerprint))
+        gpghandler = getUtility(IGPGHandler)
+        key = gpghandler.retrieveKey(subkey_fingerprint)
+        self.assertEqual(primary_fingerprint, key.fingerprint)
+        self.assertTrue(key.matches(primary_fingerprint))
+        self.assertTrue(key.matches(subkey_fingerprint))
+        self.assertTrue(key.matches(subkey_fingerprint[-16:]))
+        self.assertFalse(key.matches(subkey_fingerprint[:-1] + "0"))
+
+    def test_retrieveKey_allows_64bit_key_id(self):
+        # In order to support retrieving keys during signature verification,
+        # retrieveKey temporarily allows 64-bit key IDs.
+        keyserver = self.useFixture(KeyServerTac())
+        fingerprint = "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+        key_id = fingerprint[-16:]
+        shutil.copy2(
+            test_pubkey_file_from_email("foo.bar@canonical.com"),
+            os.path.join(keyserver.root, "0x%s.get" % key_id))
+        gpghandler = getUtility(IGPGHandler)
+        self.assertEqual(
+            fingerprint, gpghandler.retrieveKey(key_id).fingerprint)
+        fingerprints = set(key.fingerprint for key in gpghandler.localKeys())
+        self.assertIn(fingerprint, fingerprints)
+
+    def test_retrieveKey_checks_64bit_key_id(self):
+        # If retrieveKey is given a 64-bit key ID, it checks that it's a
+        # suffix of the fingerprint (which is the best it can do).
+        keyserver = self.useFixture(KeyServerTac())
+        key_id = "0000000000000000"
+        shutil.copy2(
+            test_pubkey_file_from_email("foo.bar@canonical.com"),
+            os.path.join(keyserver.root, "0x%s.get" % key_id))
+        gpghandler = getUtility(IGPGHandler)
+        self.assertRaises(
+            GPGKeyMismatchOnServer, gpghandler.retrieveKey, key_id)
+        self.assertEqual([], list(gpghandler.localKeys()))
+
+    def test_retrieveKey_forbids_32bit_key_id(self):
+        # 32-bit key IDs are just too terrible, and retrieveKey doesn't
+        # support those.
+        keyserver = self.useFixture(KeyServerTac())
+        fingerprint = "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+        key_id = fingerprint[-8:]
+        shutil.copy2(
+            test_pubkey_file_from_email("foo.bar@canonical.com"),
+            os.path.join(keyserver.root, "0x%s.get" % key_id))
+        gpghandler = getUtility(IGPGHandler)
+        self.assertRaises(
+            GPGKeyMismatchOnServer, gpghandler.retrieveKey, key_id)
+        self.assertEqual([], list(gpghandler.localKeys()))
+
     def test_uploadPublicKey_suppress_in_config(self):
         self.useFixture(KeyServerTac())
         logger = BufferLogger()
@@ -269,7 +328,8 @@ class TestGPGHandler(TestCase):
             # plumbing.
             with open(os.devnull, "w") as devnull:
                 gpg_proc = subprocess.Popen(
-                    ["gpg", "--quiet", "--status-fd", "1", "--verify"],
+                    [get_gpg_path(), "--quiet", "--status-fd", "1",
+                     "--verify"],
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                     stderr=devnull, universal_newlines=True)
             status = gpg_proc.communicate(signed_content)[0].splitlines()

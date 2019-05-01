@@ -1110,7 +1110,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.pocket == pocket,
             SourcePackagePublishingHistory.component == component,
             SourcePackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED)
+                PackagePublishingStatus.PUBLISHED,
+            SourcePackagePublishingHistory.sourcepackagename ==
+                SourcePackageName.id).order_by(SourcePackageName.name)
 
         def eager_load(spphs):
             # Preload everything which will be used by archivepublisher's
@@ -1146,7 +1148,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.pocket == pocket,
             BinaryPackagePublishingHistory.component == component,
             BinaryPackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED)
+                PackagePublishingStatus.PUBLISHED,
+            BinaryPackagePublishingHistory.binarypackagename ==
+                BinaryPackageName.id).order_by(BinaryPackageName.name)
 
         def eager_load(bpphs):
             # Preload everything which will be used by archivepublisher's

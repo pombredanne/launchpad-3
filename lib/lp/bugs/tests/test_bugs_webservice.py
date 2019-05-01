@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -31,7 +31,7 @@ from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
-from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.beautifulsoup import BeautifulSoup4 as BeautifulSoup
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -108,7 +108,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
     def findBugDescription(self, response):
         """Find the bug description field in an XHTML document fragment."""
         soup = BeautifulSoup(response.body)
-        dt = soup.find('dt', text="description").parent
+        dt = soup.find('dt', text="description")
         dd = dt.findNextSibling('dd')
         return str(dd.contents.pop())
 
@@ -121,7 +121,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
         self.assertEqual(
             self.findBugDescription(response),
             u'<p>Useless bugs are useless. '
-            'See <a href="/bugs/%d" class="bug-link">Bug %d</a>.</p>' % (
+            'See <a class="bug-link" href="/bugs/%d">Bug %d</a>.</p>' % (
             self.bug_one.id, self.bug_one.id))
 
     def test_PATCH_xhtml_representation(self):
@@ -140,7 +140,7 @@ class TestBugDescriptionRepresentation(TestCaseWithFactory):
 
         self.assertEqual(
             self.findBugDescription(response),
-            u'<p>See <a href="/bugs/%d" class="bug-link">bug %d</a></p>' % (
+            u'<p>See <a class="bug-link" href="/bugs/%d">bug %d</a></p>' % (
             self.bug_one.id, self.bug_one.id))
 
 

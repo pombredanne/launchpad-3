@@ -26,15 +26,15 @@ consumer's request to access Launchpad on their behalf.
     ...     return view, token
 
     >>> from lp.services.beautifulsoup import (
-    ...     BeautifulSoup,
-    ...     SoupStrainer,
+    ...     BeautifulSoup4 as BeautifulSoup,
+    ...     SoupStrainer4 as SoupStrainer,
     ...     )
     >>> def print_hidden_fields(html):
     ...     soup = BeautifulSoup(
-    ...         html, parseOnlyThese=SoupStrainer(attrs={'type': 'hidden'}))
+    ...         html, parse_only=SoupStrainer(attrs={'type': 'hidden'}))
     ...     for tag in soup.findAll(attrs={'type': 'hidden'}):
-    ...         if tag.attrMap['value']:
-    ...             print tag.attrMap['name'], tag.attrMap['value']
+    ...         if tag['value']:
+    ...             print tag['name'], tag['value']
 
 When the client doesn't specify a duration, the resulting request
 token will have no expiration date set.

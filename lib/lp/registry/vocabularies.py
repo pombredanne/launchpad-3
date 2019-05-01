@@ -72,6 +72,7 @@ from sqlobject import (
     CONTAINSSTRING,
     OR,
     )
+from storm.databases.postgres import Case
 from storm.expr import (
     And,
     Column,
@@ -178,10 +179,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.database.stormexpr import (
-    Case,
-    RegexpMatch,
-    )
+from lp.services.database.stormexpr import RegexpMatch
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -2004,13 +2002,13 @@ class SourcePackageNameVocabulary(NamedStormHugeVocabulary):
                         *self._clauses),
                     tables=self._table))))
         rank = Case(
-            when=(
+            cases=(
                 (self._table.name == query, 100),
                 (self._table.name.startswith(query + "-"), 75),
                 (self._table.name.startswith(query), 50),
                 (self._table.name.contains_string("-" + query), 25),
                 ),
-            else_=1)
+            default=1)
         results.order_by(Desc(rank), self._table.name)
         return self.iterator(results.count(), results, self.toTerm)
 
@@ -2169,7 +2167,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             "sourcepackagename", SearchableDSPC)
         searchable_dspc_binpkgnames = Column("binpkgnames", SearchableDSPC)
         rank = Case(
-            when=(
+            cases=(
                 # name == query
                 (searchable_dspc_name == query, 100),
                 (RegexpMatch(searchable_dspc_binpkgnames,
@@ -2187,7 +2185,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 (RegexpMatch(searchable_dspc_binpkgnames,
                              r'-%s' % query_re), 30),
                 ),
-            else_=1)
+            default=1)
         results = store.with_(searchable_dspc_cte).using(
             DistributionSourcePackageInDatabase, SearchableDSPC).find(
                 (DistributionSourcePackageInDatabase,

@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
@@ -237,11 +237,13 @@ class BaseRunnableJob(BaseRunnableJobSource):
         # Avoid importing from lp.services.job.celeryjob where not needed, to
         # avoid configuring Celery when Rabbit is not configured.
         from lp.services.job.celeryjob import (
-            CeleryRunJob, CeleryRunJobIgnoreResult)
+            celery_run_job,
+            celery_run_job_ignore_result,
+            )
         if ignore_result:
-            cls = CeleryRunJobIgnoreResult
+            task = celery_run_job_ignore_result
         else:
-            cls = CeleryRunJob
+            task = celery_run_job
         db_class = self.getDBClass()
         ujob_id = (self.job_id, db_class.__module__, db_class.__name__)
         eta = self.job.scheduled_start
@@ -250,7 +252,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
         if (self.job.lease_expires is not None
                 and (eta is None or eta < self.job.lease_expires)):
             eta = self.job.lease_expires
-        return cls.apply_async(
+        return task.apply_async(
             (ujob_id, self.config.dbuser), queue=self.task_queue, eta=eta,
             soft_time_limit=self.soft_time_limit.total_seconds(),
             task_id=self.taskId())
@@ -268,7 +270,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def celeryRunOnCommit(self):
         """Configure transaction so that commit runs this job via Celery."""
-        if not celery_enabled(self.__class__.__name__):
+        if (config.rabbitmq.host is None or
+                not celery_enabled(self.__class__.__name__)):
             return
         current = transaction.get()
         current.addAfterCommitHook(self.celeryCommitHook)

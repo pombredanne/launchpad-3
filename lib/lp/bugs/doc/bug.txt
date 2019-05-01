@@ -181,7 +181,7 @@ private. A bug cannot be made private by an anonymous user.
     >>> firefox_crashes.setPrivate(True, current_user())
     Traceback (most recent call last):
       ...
-    Unauthorized: (..., 'setPrivate', 'launchpad.Edit')
+    Unauthorized: (..., 'setPrivate', 'launchpad.Append')
 
 We have to be logged in, so let's do that:
 

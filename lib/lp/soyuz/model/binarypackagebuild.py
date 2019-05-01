@@ -77,11 +77,15 @@ from lp.services.database.sqlbase import (
     sqlvalues,
     )
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.librarian.interfaces import ILibraryFileAlias
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.enums import (
@@ -1374,25 +1378,35 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
 
     identifier = "binary-package-build"
 
+    @property
+    def _primary_caveat_name(self):
+        """See `MacaroonIssuerBase`."""
+        # The "lp.principal" prefix indicates that this caveat constrains
+        # the macaroon to access only resources that should be accessible
+        # when acting on behalf of the named build, rather than to access
+        # the named build directly.
+        return "lp.principal.binary-package-build"
+
     def checkIssuingContext(self, context):
         """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `IBinaryPackageBuild`.
         """
         if not removeSecurityProxy(context).archive.private:
-            raise ValueError("Refusing to issue macaroon for public build.")
+            raise BadMacaroonContext(
+                context, "Refusing to issue macaroon for public build.")
         return removeSecurityProxy(context).id
 
     def checkVerificationContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
-        if not isinstance(context, int):
-            raise ValueError("Cannot handle context %r." % context)
+        if not ILibraryFileAlias.providedBy(context):
+            raise BadMacaroonContext(context)
         return context
 
     def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
-        For verification, the context is a `LibraryFileAlias` ID.  We check
+        For verification, the context is an `ILibraryFileAlias`.  We check
         that the file is one of those required to build the
         `IBinaryPackageBuild` that is the context of the macaroon, and that
         the context build is currently building.
@@ -1411,5 +1425,5 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
                 SourcePackageRelease.id,
             SourcePackageReleaseFile.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
-            SourcePackageReleaseFile.libraryfileID == context,
+            SourcePackageReleaseFile.libraryfile == context,
             BinaryPackageBuild.status == BuildStatus.BUILDING).is_empty()

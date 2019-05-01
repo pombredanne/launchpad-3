@@ -11,7 +11,6 @@ __all__ = [
     'MacaroonTestMixin',
     ]
 
-from fixtures import FakeLogger
 from testtools.content import text_content
 
 
@@ -24,17 +23,18 @@ def find_caveats_by_name(macaroon, caveat_name):
 class MacaroonTestMixin:
 
     def assertMacaroonVerifies(self, issuer, macaroon, context, **kwargs):
-        with FakeLogger() as logger:
-            try:
-                self.assertTrue(issuer.verifyMacaroon(
-                    macaroon, context, **kwargs))
-            except Exception:
-                self.addDetail("log", text_content(logger.output))
-                raise
+        errors = []
+        try:
+            self.assertTrue(issuer.verifyMacaroon(
+                macaroon, context, errors=errors, **kwargs))
+        except Exception:
+            if errors:
+                self.addDetail("errors", text_content("\n".join(errors)))
+            raise
 
-    def assertMacaroonDoesNotVerify(self, expected_log_lines, issuer, macaroon,
+    def assertMacaroonDoesNotVerify(self, expected_errors, issuer, macaroon,
                                     context, **kwargs):
-        with FakeLogger() as logger:
-            self.assertFalse(issuer.verifyMacaroon(
-                macaroon, context, **kwargs))
-            self.assertEqual(expected_log_lines, logger.output.splitlines())
+        errors = []
+        self.assertFalse(issuer.verifyMacaroon(
+            macaroon, context, errors=errors, **kwargs))
+        self.assertEqual(expected_errors, errors)

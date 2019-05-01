@@ -3977,7 +3977,8 @@ class TestGitRepositoryMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         authserver = AuthServerAPIView(private_root.authserver, TestRequest())
         self.assertEqual(
             faults.PermissionDenied(),
-            authserver.issueMacaroon("git-repository", repository))
+            authserver.issueMacaroon(
+                "git-repository", "GitRepository", repository))
 
     def test_verifyMacaroon_good(self):
         repository = self.factory.makeGitRepository()
@@ -4003,7 +4004,7 @@ class TestGitRepositoryMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
         self.assertMacaroonDoesNotVerify(
-            ["Signatures do not match."],
+            ["Signatures do not match"],
             issuer, macaroon, repository, user=repository.owner)
 
     def test_verifyMacaroon_wrong_repository(self):

@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the initialize_distroseries script machinery."""
@@ -248,6 +248,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.SECURITY,
             PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.PROPOSED,
             ]
         for pocket in pockets:
             self.parent, self.parent_das = self.setupParent()
@@ -263,11 +264,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                  "selected sources."),
                 ids.check)
 
-    def test_success_with_builds_in_backports_or_proposed(self):
-        # With pending builds in the BACKPORT or PROPOSED pockets, we
-        # still can initialize.
+    def test_success_with_builds_in_backports(self):
+        # With pending builds in the BACKPORTS pocket, we still can
+        # initialize.
         pockets = [
-            PackagePublishingPocket.PROPOSED,
             PackagePublishingPocket.BACKPORTS,
             ]
         for pocket in pockets:
@@ -420,11 +420,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(1, pending_child_sources.count())
 
     def test_check_success_with_binary_queue_items_pockets(self):
-        # If the parent series has binary items in pockets PROPOSED or
-        # BACKPORTS, in its queues, we still can initialize because these
-        # pockets are not considered by the initialization process.
+        # If the parent series has binary items in the BACKPORTS pocket in
+        # its queues, we can still initialize because this pocket is not
+        # considered by the initialization process.
         pockets = [
-            PackagePublishingPocket.PROPOSED,
             PackagePublishingPocket.BACKPORTS,
             ]
         for pocket in pockets:
@@ -441,11 +440,12 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
     def test_failure_with_binary_queue_items_pockets(self):
         # If the parent series has binary items in pockets RELEASE,
-        # SECURITY or UPDATES in its queues, we can't initialize.
+        # SECURITY, UPDATES or PROPOSED in its queues, we can't initialize.
         pockets = [
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.SECURITY,
             PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.PROPOSED,
             ]
         for pocket in pockets:
             parent, parent_das = self.setupParent()
