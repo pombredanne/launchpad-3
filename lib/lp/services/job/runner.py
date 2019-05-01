@@ -270,7 +270,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def celeryRunOnCommit(self):
         """Configure transaction so that commit runs this job via Celery."""
-        if not celery_enabled(self.__class__.__name__):
+        if (config.rabbitmq.host is None or
+                not celery_enabled(self.__class__.__name__)):
             return
         current = transaction.get()
         current.addAfterCommitHook(self.celeryCommitHook)
