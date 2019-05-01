@@ -1387,7 +1387,7 @@ class BinaryPackageBuildMacaroonIssuer(MacaroonIssuerBase):
         # the named build directly.
         return "lp.principal.binary-package-build"
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `IBinaryPackageBuild`.

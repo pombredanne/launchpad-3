@@ -1787,27 +1787,27 @@ class GitRepositoryMacaroonIssuer(MacaroonIssuerBase):
             "lp.expires": self.verifyExpires,
             }
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, user=None, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `IGitRepository`.
         """
-        if not IGitRepository.providedBy(context):
-            raise ValueError("Cannot handle context %r." % context)
-        return context.id
-
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`."""
-        user = getUtility(ILaunchBag).user
         if user is None:
             raise Unauthorized(
                 "git-repository macaroons may only be issued for a logged-in "
                 "user.")
+        if not IGitRepository.providedBy(context):
+            raise ValueError("Cannot handle context %r." % context)
+        return context.id
+
+    def issueMacaroon(self, context, user=None, **kwargs):
+        """See `IMacaroonIssuer`."""
         macaroon = super(GitRepositoryMacaroonIssuer, self).issueMacaroon(
-            context)
+            context, user=user, **kwargs)
+        naked_account = removeSecurityProxy(user).account
         macaroon.add_first_party_caveat(
             "lp.openid-identifier " +
-            user.account.openid_identifiers.any().identifier)
+            naked_account.openid_identifiers.any().identifier)
         store = IStore(GitRepository)
         # XXX cjwatson 2019-04-09: Expire macaroons after the number of
         # seconds given in the code.git.access_token_expiry feature flag,

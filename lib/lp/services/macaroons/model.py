@@ -68,7 +68,7 @@ class MacaroonIssuerBase:
                 "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """Check that the issuing context is suitable.
 
         Concrete implementations may implement this method to check that the
@@ -82,9 +82,9 @@ class MacaroonIssuerBase:
         """
         return context
 
-    def issueMacaroon(self, context):
+    def issueMacaroon(self, context, **kwargs):
         """See `IMacaroonIssuer`."""
-        context = self.checkIssuingContext(context)
+        context = self.checkIssuingContext(context, **kwargs)
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname,
             identifier=self.identifier, key=self._root_secret)

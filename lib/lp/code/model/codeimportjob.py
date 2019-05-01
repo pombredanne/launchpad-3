@@ -428,7 +428,7 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
                 "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if context.code_import.git_repository is None:
             raise BadMacaroonContext(

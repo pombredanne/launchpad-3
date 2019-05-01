@@ -53,11 +53,13 @@ class IMacaroonIssuerPublic(Interface):
 class IMacaroonIssuer(IMacaroonIssuerPublic):
     """Interface to a policy for issuing and verifying macaroons."""
 
-    def issueMacaroon(context):
+    def issueMacaroon(context, **kwargs):
         """Issue a macaroon for `context`.
 
         :param context: The context that the returned macaroon should relate
             to.
+        :param kwargs: Additional arguments that issuers may require to issue
+            a macaroon.
         :raises BadMacaroonContext: if the context is unsuitable.
         :return: A macaroon.
         """

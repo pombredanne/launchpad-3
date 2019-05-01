@@ -599,7 +599,7 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
     identifier = "snap-build"
     issuable_via_authserver = True
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `ISnapBuild`.
