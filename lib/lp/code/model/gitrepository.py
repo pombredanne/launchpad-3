@@ -1851,7 +1851,7 @@ class GitRepositoryMacaroonIssuer(MacaroonIssuerBase):
                 caveat_value)
         except LookupError:
             return False
-        return user == IPerson(account)
+        return IPerson.providedBy(user) and user.account == account
 
     def verifyExpires(self, caveat_value, context, **kwargs):
         """Verify an lp.expires caveat."""
