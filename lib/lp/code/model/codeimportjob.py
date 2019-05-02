@@ -428,14 +428,14 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
                 "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if context.code_import.git_repository is None:
             raise BadMacaroonContext(
                 context, "context.code_import.git_repository is None")
         return context.id
 
-    def checkVerificationContext(self, context):
+    def checkVerificationContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For verification, the context may be an `ICodeImportJob`, in which
@@ -461,7 +461,7 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
                 context, "%r is not in the RUNNING state." % context)
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if context is None:
             # We're only verifying that the macaroon could be valid for some

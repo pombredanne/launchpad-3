@@ -599,7 +599,7 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
     identifier = "snap-build"
     issuable_via_authserver = True
 
-    def checkIssuingContext(self, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For issuing, the context is an `ISnapBuild`.
@@ -611,13 +611,13 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
                 context, "Refusing to issue macaroon for public build.")
         return removeSecurityProxy(context).id
 
-    def checkVerificationContext(self, context):
+    def checkVerificationContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
         if not IGitRepository.providedBy(context):
             raise BadMacaroonContext(context)
         return context
 
-    def verifyPrimaryCaveat(self, caveat_value, context):
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For verification, the context is an `IGitRepository`.  We check that
