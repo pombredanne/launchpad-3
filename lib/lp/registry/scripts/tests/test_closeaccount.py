@@ -180,6 +180,15 @@ class TestCloseAccount(TestCaseWithFactory):
             script.logger.getLogBuffer())
         self.assertNotRemoved(account_id, person_id)
 
+    def test_dry_run(self):
+        person, person_id, account_id = self.makePopulatedUser()
+        script = self.makeScript(['--dry-run', six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertIn(
+            'Dry run, so not committing changes', script.logger.getLogBuffer())
+        self.assertNotRemoved(account_id, person_id)
+
     def test_single_by_name(self):
         person, person_id, account_id = self.makePopulatedUser()
         script = self.makeScript([six.ensure_str(person.name)])
