@@ -410,6 +410,12 @@ class CloseAccountScript(LaunchpadScript):
         "Close a person's account, deleting as much personal information "
         "as possible.")
 
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option(
+            "-n", "--dry-run", default=False, action="store_true",
+            help="Do not commit changes.")
+
     def main(self):
         if not self.args:
             raise LaunchpadScriptFailure(
@@ -421,5 +427,10 @@ class CloseAccountScript(LaunchpadScript):
             except Exception:
                 self.txn.abort()
                 raise
-        self.logger.debug("Committing changes")
-        self.txn.commit()
+
+        if self.options.dry_run:
+            self.logger.debug("Dry run, so not committing changes")
+            self.txn.abort()
+        else:
+            self.logger.debug("Committing changes")
+            self.txn.commit()
