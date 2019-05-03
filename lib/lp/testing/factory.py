@@ -4769,7 +4769,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSnapBuild(self, requester=None, registrant=None, snap=None,
                       archive=None, distroarchseries=None, pocket=None,
-                      channels=None, date_created=DEFAULT,
+                      channels=None, date_created=DEFAULT, build_request=None,
                       status=BuildStatus.NEEDSBUILD, builder=None,
                       duration=None, **kwargs):
         """Make a new SnapBuild."""
@@ -4799,7 +4799,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket = PackagePublishingPocket.UPDATES
         snapbuild = getUtility(ISnapBuildSet).new(
             requester, snap, archive, distroarchseries, pocket,
-            channels=channels, date_created=date_created)
+            channels=channels, date_created=date_created,
+            build_request=build_request)
         if duration is not None:
             removeSecurityProxy(snapbuild).updateStatus(
                 BuildStatus.BUILDING, builder=builder,
