@@ -23,6 +23,8 @@ from lp.answers.enums import QuestionStatus
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugsummary import BugSummary
+from lp.code.enums import TargetRevisionControlSystems
+from lp.code.tests.helpers import GitHostingFixture
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
@@ -482,3 +484,22 @@ class TestCloseAccount(TestCaseWithFactory):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
         self.assertEqual(person, product.owner)
+
+    def test_skips_code_import(self):
+        self.useFixture(GitHostingFixture())
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        code_imports = [
+            self.factory.makeCodeImport(
+                registrant=person, target_rcs_type=target_rcs_type, owner=team)
+            for target_rcs_type in (
+                TargetRevisionControlSystems.BZR,
+                TargetRevisionControlSystems.GIT)]
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual(person, code_imports[0].registrant)
+        self.assertEqual(person, code_imports[1].registrant)

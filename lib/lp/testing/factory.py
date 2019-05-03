@@ -2408,7 +2408,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                        git_repo_url=None,
                        bzr_branch_url=None, registrant=None,
                        rcs_type=None, target_rcs_type=None,
-                       review_status=None):
+                       review_status=None, owner=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -2439,20 +2439,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.BZR_SVN,
                 target_rcs_type=target_rcs_type,
-                url=svn_branch_url, review_status=review_status)
+                url=svn_branch_url, review_status=review_status, owner=owner)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
                 registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 target_rcs_type=target_rcs_type,
-                url=git_repo_url, review_status=review_status)
+                url=git_repo_url, review_status=review_status, owner=owner)
         elif bzr_branch_url is not None:
             return code_import_set.new(
                 registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.BZR,
                 target_rcs_type=target_rcs_type,
-                url=bzr_branch_url, review_status=review_status)
+                url=bzr_branch_url, review_status=review_status, owner=owner)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
@@ -2460,7 +2460,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 rcs_type=RevisionControlSystems.CVS,
                 target_rcs_type=target_rcs_type,
                 cvs_root=cvs_root, cvs_module=cvs_module,
-                review_status=review_status)
+                review_status=review_status, owner=owner)
 
     def makeChangelog(self, spn=None, versions=[]):
         """Create and return a LFA of a valid Debian-style changelog.
