@@ -1787,6 +1787,14 @@ class GitRepositoryMacaroonIssuer(MacaroonIssuerBase):
             "lp.expires": self.verifyExpires,
             }
 
+    @property
+    def _root_secret(self):
+        secret = config.codehosting.git_macaroon_secret_key
+        if not secret:
+            raise RuntimeError(
+                "codehosting.git_macaroon_secret_key not configured.")
+        return secret
+
     def checkIssuingContext(self, context, user=None, **kwargs):
         """See `MacaroonIssuerBase`.
 
