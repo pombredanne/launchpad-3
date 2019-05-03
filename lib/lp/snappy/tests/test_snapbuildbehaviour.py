@@ -16,8 +16,8 @@ import time
 import uuid
 
 import fixtures
-import pytz
 from pymacaroons import Macaroon
+import pytz
 from six.moves.urllib_parse import urlsplit
 from testtools import ExpectedException
 from testtools.matchers import (
@@ -88,16 +88,19 @@ from lp.snappy.interfaces.snap import (
     SnapBuildArchiveOwnerMismatch,
     )
 from lp.snappy.model.snapbuildbehaviour import (
-    SnapBuildBehaviour,
     format_as_rfc3339,
-)
+    SnapBuildBehaviour,
+    )
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.tests.soyuz import Base64KeyMatches
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -166,8 +169,7 @@ class InProcessProxyAuthAPIFixture(fixtures.Fixture):
         self.addCleanup(config.pop, "in-process-proxy-auth-api-fixture")
 
 
-class FormatAsRfc3339TestCase(TestCaseWithFactory):
-    layer = LaunchpadZopelessLayer
+class FormatAsRfc3339TestCase(TestCase):
 
     def test_simple(self):
         t = datetime(2016, 1, 1)
