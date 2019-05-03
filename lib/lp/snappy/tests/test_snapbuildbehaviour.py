@@ -16,6 +16,7 @@ import time
 import uuid
 
 import fixtures
+import pytz
 from pymacaroons import Macaroon
 from six.moves.urllib_parse import urlsplit
 from testtools import ExpectedException
@@ -86,7 +87,10 @@ from lp.snappy.interfaces.snap import (
     SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
     SnapBuildArchiveOwnerMismatch,
     )
-from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
+from lp.snappy.model.snapbuildbehaviour import (
+    SnapBuildBehaviour,
+    format_as_rfc3339,
+)
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -160,6 +164,22 @@ class InProcessProxyAuthAPIFixture(fixtures.Fixture):
             """) %
             (port.getHost().host, port.getHost().port))
         self.addCleanup(config.pop, "in-process-proxy-auth-api-fixture")
+
+
+class FormatAsRfc3339TestCase(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_simple(self):
+        t = datetime(2016, 1, 1)
+        self.assertEqual('2016-01-01T00:00:00Z', format_as_rfc3339(t))
+
+    def test_microsecond_is_ignored(self):
+        ts = datetime(2016, 1, 1, microsecond=10)
+        self.assertEqual('2016-01-01T00:00:00Z', format_as_rfc3339(ts))
+
+    def test_tzinfo_is_ignored(self):
+        tz = datetime(2016, 1, 1, tzinfo=pytz.timezone('US/Eastern'))
+        self.assertEqual('2016-01-01T00:00:00Z', format_as_rfc3339(tz))
 
 
 class TestSnapBuildBehaviourBase(TestCaseWithFactory):
@@ -411,8 +431,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         job = self.makeJob(snap=snap, build_request=request)
         args = yield job.extraBuildArgs()
         self.assertEqual(request.id, args["build_request_id"])
-        expected_timestamp = request.date_requested.replace(
-            microsecond=0, tzinfo=None).isoformat() + 'Z'
+        expected_timestamp = format_as_rfc3339(request.date_requested)
         self.assertEqual(expected_timestamp, args["build_request_timestamp"])
 
     @defer.inlineCallbacks

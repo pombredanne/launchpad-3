@@ -43,6 +43,17 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 
 
+def format_as_rfc3339(timestamp):
+    """Return a RFC3339 representation of the given timestamp.
+
+    Clear 'microsecond' and 'tzinfo' before returning its '.isoformat()'
+    representation appended with 'Z' (https://www.ietf.org/rfc/rfc3339.txt)
+
+    This is how snapd/SAS and snapcraft usually represent timestamps.
+    """
+    return timestamp.replace(microsecond=0, tzinfo=None).isoformat() + 'Z'
+
+
 @adapter(ISnapBuild)
 @implementer(IBuildFarmJobBehaviour)
 class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
@@ -144,11 +155,10 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         args["private"] = build.is_private
         build_request = build.build_request
         if build_request is not None:
+            args["build_request_id"] = build_request.id
             # RFC3339 format for timestamp
             # (matching snapd, SAS and snapcraft representation)
-            timestamp = build_request.date_requested.replace(
-                microsecond=0, tzinfo=None).isoformat() + 'Z'
-            args["build_request_id"] = build_request.id
+            timestamp = format_as_rfc3339(build_request.date_requested)
             args["build_request_timestamp"] = timestamp
         defer.returnValue(args)
 
