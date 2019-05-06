@@ -17,6 +17,7 @@ import uuid
 
 import fixtures
 from pymacaroons import Macaroon
+import pytz
 from six.moves.urllib_parse import urlsplit
 from testtools import ExpectedException
 from testtools.matchers import (
@@ -86,14 +87,20 @@ from lp.snappy.interfaces.snap import (
     SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
     SnapBuildArchiveOwnerMismatch,
     )
-from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
+from lp.snappy.model.snapbuildbehaviour import (
+    format_as_rfc3339,
+    SnapBuildBehaviour,
+    )
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.tests.soyuz import Base64KeyMatches
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -160,6 +167,21 @@ class InProcessProxyAuthAPIFixture(fixtures.Fixture):
             """) %
             (port.getHost().host, port.getHost().port))
         self.addCleanup(config.pop, "in-process-proxy-auth-api-fixture")
+
+
+class FormatAsRfc3339TestCase(TestCase):
+
+    def test_simple(self):
+        t = datetime(2016, 1, 1)
+        self.assertEqual('2016-01-01T00:00:00Z', format_as_rfc3339(t))
+
+    def test_microsecond_is_ignored(self):
+        ts = datetime(2016, 1, 1, microsecond=10)
+        self.assertEqual('2016-01-01T00:00:00Z', format_as_rfc3339(ts))
+
+    def test_tzinfo_is_ignored(self):
+        tz = datetime(2016, 1, 1, tzinfo=pytz.timezone('US/Eastern'))
+        self.assertEqual('2016-01-01T00:00:00Z', format_as_rfc3339(tz))
 
 
 class TestSnapBuildBehaviourBase(TestCaseWithFactory):
@@ -403,6 +425,16 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "series": Equals("unstable"),
             "trusted_keys": Equals(expected_trusted_keys),
             }))
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_build_request_args(self):
+        snap = self.factory.makeSnap()
+        request = self.factory.makeSnapBuildRequest(snap=snap)
+        job = self.makeJob(snap=snap, build_request=request)
+        args = yield job.extraBuildArgs()
+        self.assertEqual(request.id, args["build_request_id"])
+        expected_timestamp = format_as_rfc3339(request.date_requested)
+        self.assertEqual(expected_timestamp, args["build_request_timestamp"])
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_git(self):
