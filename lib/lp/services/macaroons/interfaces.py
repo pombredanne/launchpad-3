@@ -9,9 +9,13 @@ __metaclass__ = type
 __all__ = [
     'BadMacaroonContext',
     'IMacaroonIssuer',
+    'IMacaroonVerificationResult',
     ]
 
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Bool
 
 
@@ -25,8 +29,16 @@ class BadMacaroonContext(Exception):
         self.context = context
 
 
+class IMacaroonVerificationResult(Interface):
+    """Information about a verified macaroon."""
+
+    issuer_name = Attribute("The name of the macaroon's issuer.")
+
+
 class IMacaroonIssuerPublic(Interface):
     """Public interface to a policy for verifying macaroons."""
+
+    identifier = Attribute("An identifying name for this issuer.")
 
     issuable_via_authserver = Bool(
         "Does this issuer allow issuing macaroons via the authserver?")
@@ -46,7 +58,8 @@ class IMacaroonIssuerPublic(Interface):
             appended to this list.
         :param kwargs: Additional arguments that issuers may require to
             verify a macaroon.
-        :return: True if `macaroon` is valid for `context`, otherwise False.
+        :return: An `IMacaroonVerificationResult` if `macaroon` is valid for
+            `context`, otherwise None.
         """
 
 

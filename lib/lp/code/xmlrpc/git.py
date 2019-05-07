@@ -39,7 +39,10 @@ from lp.code.errors import (
     GitTargetError,
     InvalidNamespace,
     )
-from lp.code.interfaces.codehosting import LAUNCHPAD_ANONYMOUS
+from lp.code.interfaces.codehosting import (
+    LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
+    )
 from lp.code.interfaces.gitapi import IGitAPI
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
@@ -97,19 +100,51 @@ class GitAPI(LaunchpadXMLRPCView):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
+
         macaroon_raw = auth_params.get("macaroon")
         naked_repository = removeSecurityProxy(repository)
-        if (macaroon_raw is not None and
-                self._verifyMacaroon(macaroon_raw, naked_repository)):
-            # The authentication parameters specifically grant access to
-            # this repository, so we can bypass other checks.
-            # For the time being, this only works for code imports.
-            assert (
-                naked_repository.repository_type == GitRepositoryType.IMPORTED)
-            hosting_path = naked_repository.getInternalPath()
-            writable = True
-            private = naked_repository.private
-        else:
+        writable = None
+
+        if macaroon_raw is not None:
+            verified = self._verifyMacaroon(macaroon_raw, naked_repository)
+            if not verified:
+                # Macaroon authentication failed.  Don't fall back to the
+                # requester's permissions, since macaroons typically have
+                # additional constraints.  Instead, just return
+                # "authorisation required", thus preventing probing for the
+                # existence of repositories without presenting valid
+                # credentials.
+                raise faults.Unauthorized()
+
+            # Internal services use macaroons to authenticate.  In this
+            # case, we know that the authentication parameters specifically
+            # grant access to this repository because we were able to verify
+            # the macaroon using the repository as its context, so we can
+            # bypass other checks.  This is only permitted for selected
+            # macaroon issuers, currently only code import jobs.
+            # XXX cjwatson 2019-05-07: Remove None once
+            # authenticateWithPassword returns LAUNCHPAD_SERVICES for code
+            # import jobs on production.
+            if requester in (None, LAUNCHPAD_SERVICES):
+                repository_type = naked_repository.repository_type
+                if (verified.issuer_name == "code-import-job" and
+                        repository_type == GitRepositoryType.IMPORTED):
+                    hosting_path = naked_repository.getInternalPath()
+                    writable = True
+                    private = naked_repository.private
+                else:
+                    raise faults.Unauthorized()
+
+            # In any other case, the macaroon constrains the permissions of
+            # the principal, so fall through to doing normal user
+            # authorisation.
+        elif requester == LAUNCHPAD_SERVICES:
+            # Internal services must authenticate using a macaroon.
+            raise faults.Unauthorized()
+
+        if writable is None:
+            # This isn't an authorised internal service, so perform normal
+            # user authorisation.
             try:
                 hosting_path = repository.getInternalPath()
             except Unauthorized:
@@ -321,11 +356,15 @@ class GitAPI(LaunchpadXMLRPCView):
         """See `IGitAPI`."""
         # XXX cjwatson 2016-10-06: We only support free-floating macaroons
         # at the moment, not ones bound to a user.
-        if not username and self._verifyMacaroon(password):
-            return {"macaroon": password}
-        else:
-            # Only macaroons are supported for password authentication.
-            return faults.Unauthorized()
+        if not username:
+            verified = self._verifyMacaroon(password)
+            if verified:
+                auth_params = {"macaroon": password}
+                if verified.issuer_name == "code-import-job":
+                    auth_params["uid"] = LAUNCHPAD_SERVICES
+                return auth_params
+        # Only macaroons are supported for password authentication.
+        return faults.Unauthorized()
 
     def _renderPermissions(self, set_of_permissions):
         """Render a set of permission strings for XML-RPC output."""
