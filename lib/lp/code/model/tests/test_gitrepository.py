@@ -3917,8 +3917,7 @@ class TestGitRepositoryMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
 
     def setUp(self):
         super(TestGitRepositoryMacaroonIssuer, self).setUp()
-        self.pushConfig(
-            "launchpad", internal_macaroon_secret_key="some-secret")
+        self.pushConfig("codehosting", git_macaroon_secret_key="some-secret")
 
     def test_issueMacaroon_refuses_branch(self):
         branch = self.factory.makeAnyBranch()

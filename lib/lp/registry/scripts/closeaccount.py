@@ -91,9 +91,11 @@ def close_account(username, log):
         ('accessartifactgrant', 'grantor'),
         ('accesspolicygrant', 'grantor'),
         ('binarypackagepublishinghistory', 'removed_by'),
+        ('branch', 'registrant'),
         ('branchmergeproposal', 'merge_reporter'),
         ('branchmergeproposal', 'merger'),
         ('branchmergeproposal', 'queuer'),
+        ('branchmergeproposal', 'registrant'),
         ('branchmergeproposal', 'reviewer'),
         ('branchsubscription', 'subscribed_by'),
         ('bug', 'owner'),
@@ -103,10 +105,14 @@ def close_account(username, log):
         ('bugnomination', 'owner'),
         ('bugtask', 'owner'),
         ('bugsubscription', 'subscribed_by'),
+        ('codeimport', 'owner'),
+        ('codeimport', 'registrant'),
+        ('codeimportevent', 'person'),
         ('faq', 'last_updated_by'),
         ('featureflagchangelogentry', 'person'),
         ('gitactivity', 'changee'),
         ('gitactivity', 'changer'),
+        ('gitrepository', 'registrant'),
         ('gitrule', 'creator'),
         ('gitrulegrant', 'grantor'),
         ('gitsubscription', 'subscribed_by'),
@@ -156,6 +162,12 @@ def close_account(username, log):
         # This is maintained by trigger functions and a garbo job.  It
         # doesn't need to be updated immediately.
         ('bugsummary', 'viewed_by'),
+
+        # XXX cjwatson 2019-05-02 bug=1827399: This is suboptimal because it
+        # does retain some personal information, but it's currently hard to
+        # deal with due to the size and complexity of references to it.  We
+        # can hopefully provide a garbo job for this eventually.
+        ('revisionauthor', 'person'),
         }
     reference_names = {
         (src_tab, src_col) for src_tab, src_col, _, _, _, _ in references}
