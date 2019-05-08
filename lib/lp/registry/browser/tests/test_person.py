@@ -577,9 +577,9 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
 
         expected_msg = html_escape(dedent("""
             Invalid username 'unclean.name'. Usernames must be at least three
-            and no longer than 32 characters long. They must start and end with
-            a letter or number, all letters must be lower-case and
-            non-consecutive hyphens are allowed."""))
+            and no longer than 32 characters long. They must contain at least
+            one letter, start and end with a letter or number. All letters
+            must be lower-case and non-consecutive hyphens are allowed."""))
         self.assertEqual(expected_msg, view.errors[0])
 
     def test_unclean_usernames_do_not_block_edit(self):

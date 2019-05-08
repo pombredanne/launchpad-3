@@ -18,7 +18,7 @@ from lp.services.webapp.escaping import (
 
 username_valid_pattern = re.compile(r"^[a-z0-9](-?[a-z0-9])+$")
 username_blocked_pattern = re.compile(r"^[0-9-]+$")
-username_invalid_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9\\-]+")
+username_invalid_pattern = re.compile(r"^[^a-z0-9]+|[^a-z0-9-]+|[^a-z0-9]$")
 
 
 def sanitize_username(username):
@@ -31,8 +31,8 @@ def sanitize_username(username):
     'foobar'
     >>> sanitize_username('foo.bar+baz')
     'foobarbaz'
-    >>> sanitize_username('foo $fd?+.0')
-    'foofd0'
+    >>> sanitize_username('-#foo -$fd?.0+-')
+    'foo-fd0'
 
     """
     return username_invalid_pattern.sub('', username)
@@ -88,9 +88,9 @@ def username_validator(username):
     if not valid_username(username):
         message = _(dedent("""
             Invalid username '${username}'. Usernames must be at least three
-            and no longer than 32 characters long. They must start and end with
-            a letter or number, all letters must be lower-case and
-            non-consecutive hyphens are allowed."""),
+            and no longer than 32 characters long. They must contain at least
+            one letter, start and end with a letter or number. All letters
+            must be lower-case and non-consecutive hyphens are allowed."""),
         mapping={'username': html_escape(username)})
         raise LaunchpadValidationError(structured(message))
 
