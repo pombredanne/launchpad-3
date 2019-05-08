@@ -15,9 +15,24 @@ from pymacaroons import (
     Verifier,
     )
 from pymacaroons.exceptions import MacaroonVerificationFailedException
+from zope.interface import implementer
 
 from lp.services.config import config
-from lp.services.macaroons.interfaces import BadMacaroonContext
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonVerificationResult,
+    )
+
+
+@implementer(IMacaroonVerificationResult)
+class MacaroonVerificationResult:
+
+    def __init__(self, identifier):
+        self._issuer_name = identifier
+
+    @property
+    def issuer_name(self):
+        return self._issuer_name
 
 
 class MacaroonIssuerBase:
@@ -52,7 +67,7 @@ class MacaroonIssuerBase:
 
     @property
     def identifier(self):
-        """An identifying name for this issuer."""
+        """See `IMacaroonIssuer`."""
         raise NotImplementedError
 
     @property
@@ -129,20 +144,21 @@ class MacaroonIssuerBase:
             if errors is not None:
                 errors.append(
                     "Macaroon has unknown location '%s'." % macaroon.location)
-            return False
+            return None
         if require_context and context is None:
             if errors is not None:
                 errors.append(
                     "Expected macaroon verification context but got None.")
-            return False
+            return None
         if context is not None:
             try:
                 context = self.checkVerificationContext(context)
             except BadMacaroonContext as e:
                 if errors is not None:
                     errors.append(str(e))
-                return False
+                return None
         seen = set()
+        verified = MacaroonVerificationResult(self.identifier)
 
         def verify(caveat):
             try:
@@ -175,7 +191,10 @@ class MacaroonIssuerBase:
         try:
             verifier = Verifier()
             verifier.satisfy_general(verify)
-            return verifier.verify(macaroon, self._root_secret)
+            if verifier.verify(macaroon, self._root_secret):
+                return verified
+            else:
+                return None
         # XXX cjwatson 2019-04-24: This can currently raise a number of
         # other exceptions in the presence of non-well-formed input data,
         # but most of them are too broad to reasonably catch so we let them
@@ -184,4 +203,4 @@ class MacaroonIssuerBase:
         except MacaroonVerificationFailedException as e:
             if errors is not None and not errors:
                 errors.append(str(e))
-            return False
+            return None

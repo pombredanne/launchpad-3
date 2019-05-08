@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 from testtools.content import text_content
+from testtools.matchers import MatchesStructure
 
 
 def find_caveats_by_name(macaroon, caveat_name):
@@ -25,8 +26,11 @@ class MacaroonTestMixin:
     def assertMacaroonVerifies(self, issuer, macaroon, context, **kwargs):
         errors = []
         try:
-            self.assertTrue(issuer.verifyMacaroon(
-                macaroon, context, errors=errors, **kwargs))
+            verified = issuer.verifyMacaroon(
+                macaroon, context, errors=errors, **kwargs)
+            self.assertIsNotNone(verified)
+            self.assertThat(verified, MatchesStructure.byEquality(
+                issuer_name=issuer.identifier))
         except Exception:
             if errors:
                 self.addDetail("errors", text_content("\n".join(errors)))
@@ -35,6 +39,6 @@ class MacaroonTestMixin:
     def assertMacaroonDoesNotVerify(self, expected_errors, issuer, macaroon,
                                     context, **kwargs):
         errors = []
-        self.assertFalse(issuer.verifyMacaroon(
+        self.assertIsNone(issuer.verifyMacaroon(
             macaroon, context, errors=errors, **kwargs))
         self.assertEqual(expected_errors, errors)

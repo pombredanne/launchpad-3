@@ -1,0 +1,14 @@
+<!-- Copyright 2019 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    i18n_domain="launchpad">
+
+    <!-- MacaroonVerificationResult -->
+    <class class="lp.services.macaroons.model.MacaroonVerificationResult">
+        <allow interface="lp.services.macaroons.interfaces.IMacaroonVerificationResult" />
+    </class>
+
+</configure>
