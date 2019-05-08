@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal Git API."""
@@ -26,6 +26,7 @@ from lp.code.enums import (
     TargetRevisionControlSystems,
     )
 from lp.code.errors import GitRepositoryCreationFault
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
@@ -54,6 +55,17 @@ from lp.testing.layers import (
 from lp.xmlrpc import faults
 
 
+def _make_auth_params(requester, can_authenticate=False, macaroon_raw=None):
+    auth_params = {"can-authenticate": can_authenticate}
+    if requester == LAUNCHPAD_SERVICES:
+        auth_params["user"] = LAUNCHPAD_SERVICES
+    elif requester is not None:
+        auth_params["uid"] = requester.id
+    if macaroon_raw is not None:
+        auth_params["macaroon"] = macaroon_raw
+    return auth_params
+
+
 class TestGitAPIMixin:
     """Helper methods for `IGitAPI` tests, and security-relevant tests."""
 
@@ -66,11 +78,9 @@ class TestGitAPIMixin:
     def assertGitRepositoryNotFound(self, requester, path, permission="read",
                                     can_authenticate=False, macaroon_raw=None):
         """Assert that the given path cannot be translated."""
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
         fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(
             faults.GitRepositoryNotFound(path.strip("/")), fault)
@@ -80,33 +90,29 @@ class TestGitAPIMixin:
                                permission="read", can_authenticate=False,
                                macaroon_raw=None):
         """Assert that looking at the given path returns PermissionDenied."""
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
         fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.PermissionDenied(message), fault)
 
     def assertUnauthorized(self, requester, path,
                            message="Authorisation required.",
-                           permission="read", can_authenticate=False):
+                           permission="read", can_authenticate=False,
+                           macaroon_raw=None):
         """Assert that looking at the given path returns Unauthorized."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.Unauthorized(message), fault)
 
     def assertNotFound(self, requester, path, message, permission="read",
                        can_authenticate=False):
         """Assert that looking at the given path returns NotFound."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.NotFound(message), fault)
 
     def assertInvalidSourcePackageName(self, requester, path, name,
@@ -114,31 +120,25 @@ class TestGitAPIMixin:
                                        can_authenticate=False):
         """Assert that looking at the given path returns
         InvalidSourcePackageName."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
     def assertInvalidBranchName(self, requester, path, message,
                                 permission="read", can_authenticate=False):
         """Assert that looking at the given path returns InvalidBranchName."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.InvalidBranchName(Exception(message)), fault)
 
     def assertOopsOccurred(self, requester, path,
                            permission="read", can_authenticate=False):
         """Assert that looking at the given path OOPSes."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertIsInstance(fault, faults.OopsOccurred)
         prefix = (
             "An unexpected error has occurred while creating a Git "
@@ -149,11 +149,9 @@ class TestGitAPIMixin:
     def assertTranslates(self, requester, path, repository, writable,
                          permission="read", can_authenticate=False,
                          macaroon_raw=None, trailing="", private=False):
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
         translation = self.git_api.translatePath(path, permission, auth_params)
         login(ANONYMOUS)
         self.assertEqual(
@@ -163,13 +161,9 @@ class TestGitAPIMixin:
 
     def assertCreates(self, requester, path, can_authenticate=False,
                       private=False):
-        if requester is None:
-            requester_id = requester
-        else:
-            requester_id = requester.id
-        translation = self.git_api.translatePath(
-            path, "write",
-            {"uid": requester_id, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        translation = self.git_api.translatePath(path, "write", auth_params)
         login(ANONYMOUS)
         repository = getUtility(IGitRepositorySet).getByPath(
             requester, path.lstrip("/"))
@@ -194,11 +188,7 @@ class TestGitAPIMixin:
 
     def assertHasRefPermissions(self, requester, repository, ref_paths,
                                 permissions, macaroon_raw=None):
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(requester, macaroon_raw=macaroon_raw)
         translated_path = removeSecurityProxy(repository).getInternalPath()
         if all(isinstance(ref_path, bytes) for ref_path in ref_paths):
             ref_paths = [
@@ -977,24 +967,30 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         macaroons = [
             removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
         path = u"/%s" % code_imports[0].git_repository.unique_name
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
+            LAUNCHPAD_SERVICES, path, code_imports[0].git_repository, True,
+            permission="write", macaroon_raw=macaroons[0].serialize())
+        # XXX cjwatson 2019-05-07: Remove this once we remove the
+        # corresponding compatibility code.
+        self.assertTranslates(
             None, path, code_imports[0].git_repository, True,
             permission="write", macaroon_raw=macaroons[0].serialize())
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[1].serialize())
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
-        self.assertPermissionDenied(
-            None, path, permission="write", macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
+            macaroon_raw="nonsense")
 
     def test_translatePath_private_code_import(self):
         # A code import worker with a suitable macaroon can write to a
@@ -1017,27 +1013,32 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         macaroons = [
             removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
         path = u"/%s" % code_imports[0].git_repository.unique_name
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
+            LAUNCHPAD_SERVICES, path, code_imports[0].git_repository, True,
+            permission="write", macaroon_raw=macaroons[0].serialize(),
+            private=True)
+        # XXX cjwatson 2019-05-07: Remove this once we remove the
+        # corresponding compatibility code.
+        self.assertTranslates(
             None, path, code_imports[0].git_repository, True,
             permission="write", macaroon_raw=macaroons[0].serialize(),
             private=True)
-        # The expected faults are slightly different from the public case,
-        # because we deny the existence of private repositories.
-        self.assertGitRepositoryNotFound(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[1].serialize())
-        self.assertGitRepositoryNotFound(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
-        self.assertGitRepositoryNotFound(
-            None, path, permission="write", macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
+            macaroon_raw="nonsense")
 
     def test_notify(self):
         # The notify call creates a GitRefScanJob.
@@ -1081,7 +1082,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
         self.assertEqual(
-            {"macaroon": macaroon.serialize()},
+            {"macaroon": macaroon.serialize(), "user": "+launchpad-services"},
             self.git_api.authenticateWithPassword("", macaroon.serialize()))
         other_macaroon = Macaroon(identifier="another", key="another-secret")
         self.assertIsInstance(

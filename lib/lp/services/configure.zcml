@@ -16,6 +16,7 @@
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".librarian" />
+  <include package=".macaroons" />
   <include package=".mail" />
   <include package=".memcache" />
   <include package=".messages" />
