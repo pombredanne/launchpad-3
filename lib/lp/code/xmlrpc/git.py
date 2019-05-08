@@ -74,6 +74,27 @@ from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
 
 
+def _get_requester_id(auth_params):
+    """Get the requester ID from authentication parameters.
+
+    The pack frontend layer authenticates using either the authserver (SSH)
+    or `GitAPI.authenticateWithPassword` (HTTP), and then sends a
+    corresponding dictionary of authentication parameters to other methods.
+    For a real user, it sends a "uid" item with the person's ID; for
+    internal services, it sends "user": "+launchpad-services"; for anonymous
+    requests, it sends neither.
+    """
+    requester_id = auth_params.get("uid")
+    if requester_id is not None:
+        return requester_id
+    # We never need to identify other users by name, so limit the "user"
+    # item to just internal services.
+    if auth_params.get("user") == LAUNCHPAD_SERVICES:
+        return LAUNCHPAD_SERVICES
+    else:
+        return LAUNCHPAD_ANONYMOUS
+
+
 @implementer(IGitAPI)
 class GitAPI(LaunchpadXMLRPCView):
     """See `IGitAPI`."""
@@ -336,11 +357,8 @@ class GitAPI(LaunchpadXMLRPCView):
 
     def translatePath(self, path, permission, auth_params):
         """See `IGitAPI`."""
-        requester_id = auth_params.get("uid")
-        if requester_id is None:
-            requester_id = LAUNCHPAD_ANONYMOUS
         return run_with_login(
-            requester_id, self._translatePath,
+            _get_requester_id(auth_params), self._translatePath,
             six.ensure_text(path).strip("/"), permission, auth_params)
 
     def notify(self, translated_path):
@@ -361,7 +379,7 @@ class GitAPI(LaunchpadXMLRPCView):
             if verified:
                 auth_params = {"macaroon": password}
                 if verified.issuer_name == "code-import-job":
-                    auth_params["uid"] = LAUNCHPAD_SERVICES
+                    auth_params["user"] = LAUNCHPAD_SERVICES
                 return auth_params
         # Only macaroons are supported for password authentication.
         return faults.Unauthorized()
@@ -422,11 +440,8 @@ class GitAPI(LaunchpadXMLRPCView):
 
     def checkRefPermissions(self, translated_path, ref_paths, auth_params):
         """See `IGitAPI`."""
-        requester_id = auth_params.get("uid")
-        if requester_id is None:
-            requester_id = LAUNCHPAD_ANONYMOUS
         return run_with_login(
-            requester_id,
+            _get_requester_id(auth_params),
             self._checkRefPermissions,
             translated_path,
             ref_paths,
