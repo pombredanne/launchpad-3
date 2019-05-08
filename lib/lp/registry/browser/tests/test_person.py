@@ -567,6 +567,42 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
         self.ppa = self.factory.makeArchive(owner=self.person)
         self.view = create_initialized_view(self.person, '+edit')
 
+    def test_unclean_usernames_cannot_be_set(self):
+        # Users cannot set unclean usernames
+        form = {
+            'field.name': 'unclean.name',
+            'field.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(self.person, '+edit', form=form)
+
+        expected_msg = html_escape(dedent("""
+            Invalid username 'unclean.name'. Usernames must be at least three
+            and no longer than 32 characters long. They must contain at least
+            one letter, start and end with a letter or number. All letters
+            must be lower-case and non-consecutive hyphens are allowed."""))
+        self.assertEqual(expected_msg, view.errors[0])
+
+    def test_unclean_usernames_do_not_block_edit(self):
+        # Users with unclean usernames (less restrictive) are not forced
+        # to update it along with other details of their account.
+        dirty_person = self.factory.makePerson(name='unclean.name')
+        login_person(dirty_person)
+
+        form = {
+            'field.display_name': 'Nice Displayname',
+            'field.name': dirty_person.name,
+            'field.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(dirty_person, '+edit', form=form)
+
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'The changes to your personal details have been saved.',
+            notifications[0].message)
+        self.assertEqual('Nice Displayname', dirty_person.displayname)
+        self.assertEqual('unclean.name', dirty_person.name)
+
     def createAddEmailView(self, email_address):
         """Test helper to create +editemails view."""
         form = {

@@ -39,7 +39,7 @@ def sanitize_name(name):
 def valid_name(name):
     """Return True if the name is valid, otherwise False.
 
-    Lauchpad `name` attributes are designed for use as url components
+    Launchpad `name` attributes are designed for use as url components
     and short unique identifiers to things.
 
     The default name constraints may be too strict for some objects,
