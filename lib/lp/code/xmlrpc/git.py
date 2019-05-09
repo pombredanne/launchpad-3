@@ -144,9 +144,7 @@ class GitAPI(LaunchpadXMLRPCView):
             # bypass other checks.  This is only permitted for selected
             # macaroon issuers, currently only code import jobs.
             if requester == LAUNCHPAD_SERVICES:
-                repository_type = naked_repository.repository_type
-                if (verified.issuer_name == "code-import-job" and
-                        repository_type == GitRepositoryType.IMPORTED):
+                if verified.issuer_name == "code-import-job":
                     hosting_path = naked_repository.getInternalPath()
                     writable = True
                     private = naked_repository.private
