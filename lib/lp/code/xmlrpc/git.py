@@ -143,10 +143,7 @@ class GitAPI(LaunchpadXMLRPCView):
             # the macaroon using the repository as its context, so we can
             # bypass other checks.  This is only permitted for selected
             # macaroon issuers, currently only code import jobs.
-            # XXX cjwatson 2019-05-07: Remove None once
-            # authenticateWithPassword returns LAUNCHPAD_SERVICES for code
-            # import jobs on production.
-            if requester in (None, LAUNCHPAD_SERVICES):
+            if requester == LAUNCHPAD_SERVICES:
                 repository_type = naked_repository.repository_type
                 if (verified.issuer_name == "code-import-job" and
                         repository_type == GitRepositoryType.IMPORTED):

@@ -975,11 +975,6 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertTranslates(
             LAUNCHPAD_SERVICES, path, code_imports[0].git_repository, True,
             permission="write", macaroon_raw=macaroons[0].serialize())
-        # XXX cjwatson 2019-05-07: Remove this once we remove the
-        # corresponding compatibility code.
-        self.assertTranslates(
-            None, path, code_imports[0].git_repository, True,
-            permission="write", macaroon_raw=macaroons[0].serialize())
         self.assertUnauthorized(
             LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[1].serialize())
@@ -1020,12 +1015,6 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
             LAUNCHPAD_SERVICES, path, code_imports[0].git_repository, True,
-            permission="write", macaroon_raw=macaroons[0].serialize(),
-            private=True)
-        # XXX cjwatson 2019-05-07: Remove this once we remove the
-        # corresponding compatibility code.
-        self.assertTranslates(
-            None, path, code_imports[0].git_repository, True,
             permission="write", macaroon_raw=macaroons[0].serialize(),
             private=True)
         self.assertUnauthorized(
