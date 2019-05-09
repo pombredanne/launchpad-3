@@ -1336,6 +1336,8 @@ class TestCodeImportJobMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
         self.assertMacaroonVerifies(
+            issuer, macaroon, None, require_context=False)
+        self.assertMacaroonVerifies(
             issuer, macaroon, job, require_context=False)
         self.assertMacaroonVerifies(
             issuer, macaroon, job.code_import.target, require_context=False)
