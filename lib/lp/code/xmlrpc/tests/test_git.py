@@ -1109,25 +1109,28 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         repository = code_imports[0].git_repository
         ref_path = "refs/heads/master"
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertHasRefPermissions(
-            None, repository, [ref_path],
+            LAUNCHPAD_SERVICES, repository, [ref_path],
             {ref_path: ["create", "push", "force_push"]},
             macaroon_raw=macaroons[0].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[1].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw="nonsense")
+        self.assertHasRefPermissions(
+            code_imports[0].registrant, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0].serialize())
 
     def test_checkRefPermissions_private_code_import(self):
         # A code import worker with a suitable macaroon has repository owner
@@ -1153,25 +1156,28 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         repository = code_imports[0].git_repository
         ref_path = "refs/heads/master"
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[0])
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertHasRefPermissions(
-            None, repository, [ref_path],
+            LAUNCHPAD_SERVICES, repository, [ref_path],
             {ref_path: ["create", "push", "force_push"]},
             macaroon_raw=macaroons[0].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[1].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw="nonsense")
+        self.assertHasRefPermissions(
+            code_imports[0].registrant, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0].serialize())
 
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):
