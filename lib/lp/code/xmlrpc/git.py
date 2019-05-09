@@ -143,13 +143,18 @@ class GitAPI(LaunchpadXMLRPCView):
             # the macaroon using the repository as its context, so we can
             # bypass other checks.  This is only permitted for selected
             # macaroon issuers, currently only code import jobs.
+            issuer_is_internal = (verified.issuer_name == "code-import-job")
             if requester == LAUNCHPAD_SERVICES:
-                if verified.issuer_name == "code-import-job":
+                if issuer_is_internal:
                     hosting_path = naked_repository.getInternalPath()
                     writable = True
                     private = naked_repository.private
                 else:
                     raise faults.Unauthorized()
+            elif issuer_is_internal:
+                # Real users may not authenticate using macaroons intended
+                # for use by internal services.
+                raise faults.Unauthorized()
 
             # In any other case, the macaroon constrains the permissions of
             # the principal, so fall through to doing normal user

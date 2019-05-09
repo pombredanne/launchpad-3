@@ -986,6 +986,9 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertUnauthorized(
             LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            code_imports[0].registrant, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
 
     def test_translatePath_private_code_import(self):
         # A code import worker with a suitable macaroon can write to a
@@ -1028,6 +1031,9 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertUnauthorized(
             LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            code_imports[0].registrant, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
 
     def test_notify(self):
         # The notify call creates a GitRefScanJob.
