@@ -843,6 +843,33 @@ class TestSnapBuildMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         macaroon = issuer.issueMacaroon(build)
         self.assertMacaroonVerifies(issuer, macaroon, ref.repository)
 
+    def test_verifyMacaroon_good_no_context(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(build)
+        self.assertMacaroonVerifies(
+            issuer, macaroon, None, require_context=False)
+        self.assertMacaroonVerifies(
+            issuer, macaroon, ref.repository, require_context=False)
+
+    def test_verifyMacaroon_no_context_but_require_context(self):
+        [ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(git_ref=ref, private=True))
+        build.updateStatus(BuildStatus.BUILDING)
+        issuer = removeSecurityProxy(
+            getUtility(IMacaroonIssuer, "snap-build"))
+        macaroon = issuer.issueMacaroon(build)
+        self.assertMacaroonDoesNotVerify(
+            ["Expected macaroon verification context but got None."],
+            issuer, macaroon, None)
+
     def test_verifyMacaroon_wrong_location(self):
         [ref] = self.factory.makeGitRefs(
             information_type=InformationType.USERDATA)
@@ -856,6 +883,9 @@ class TestSnapBuildMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
         self.assertMacaroonDoesNotVerify(
             ["Macaroon has unknown location 'another-location'."],
             issuer, macaroon, ref.repository)
+        self.assertMacaroonDoesNotVerify(
+            ["Macaroon has unknown location 'another-location'."],
+            issuer, macaroon, ref.repository, require_context=False)
 
     def test_verifyMacaroon_wrong_key(self):
         [ref] = self.factory.makeGitRefs(
@@ -869,6 +899,9 @@ class TestSnapBuildMacaroonIssuer(MacaroonTestMixin, TestCaseWithFactory):
             location=config.vhost.mainsite.hostname, key="another-secret")
         self.assertMacaroonDoesNotVerify(
             ["Signatures do not match"], issuer, macaroon, ref.repository)
+        self.assertMacaroonDoesNotVerify(
+            ["Signatures do not match"],
+            issuer, macaroon, ref.repository, require_context=False)
 
     def test_verifyMacaroon_refuses_branch(self):
         branch = self.factory.makeAnyBranch(

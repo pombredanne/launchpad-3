@@ -20,6 +20,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.buildmaster.enums import BuildStatus
 from lp.code.enums import (
     GitGranteeType,
     GitRepositoryType,
@@ -38,8 +39,10 @@ from lp.code.tests.helpers import GitHostingFixture
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import TeamMembershipPolicy
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp.escaping import html_escape
+from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -1035,6 +1038,49 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             code_imports[0].registrant, path, permission="write",
             macaroon_raw=macaroons[0].serialize())
 
+    def test_translatePath_private_snap_build(self):
+        # A builder with a suitable macaroon can read from a repository
+        # associated with a running private snap build.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
+        with person_logged_in(self.factory.makePerson()) as owner:
+            refs = [
+                self.factory.makeGitRefs(
+                    owner=owner, information_type=InformationType.USERDATA)[0]
+                for _ in range(2)]
+            builds = [
+                self.factory.makeSnapBuild(
+                    requester=owner, owner=owner, git_ref=ref, private=True)
+                for ref in refs]
+            issuer = getUtility(IMacaroonIssuer, "snap-build")
+            macaroons = [
+                removeSecurityProxy(issuer).issueMacaroon(build)
+                for build in builds]
+            repository = refs[0].repository
+            path = u"/%s" % repository.unique_name
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
+        removeSecurityProxy(builds[0]).updateStatus(BuildStatus.BUILDING)
+        self.assertTranslates(
+            LAUNCHPAD_SERVICES, path, repository, False, permission="read",
+            macaroon_raw=macaroons[0].serialize(), private=True)
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="read",
+            macaroon_raw=macaroons[1].serialize())
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="read",
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="read",
+            macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            repository.registrant, path, permission="read",
+            macaroon_raw=macaroons[0].serialize())
+
     def test_notify(self):
         # The notify call creates a GitRefScanJob.
         repository = self.factory.makeGitRepository()
@@ -1076,6 +1122,29 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             job = self.factory.makeCodeImportJob(code_import=code_import)
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        self.assertEqual(
+            {"macaroon": macaroon.serialize(), "user": "+launchpad-services"},
+            self.git_api.authenticateWithPassword("", macaroon.serialize()))
+        other_macaroon = Macaroon(identifier="another", key="another-secret")
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword(
+                "", other_macaroon.serialize()),
+            faults.Unauthorized)
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword("", "nonsense"),
+            faults.Unauthorized)
+
+    def test_authenticateWithPassword_private_snap_build(self):
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
+        with person_logged_in(self.factory.makePerson()) as owner:
+            [ref] = self.factory.makeGitRefs(
+                owner=owner, information_type=InformationType.USERDATA)
+            build = self.factory.makeSnapBuild(
+                requester=owner, owner=owner, git_ref=ref, private=True)
+            issuer = getUtility(IMacaroonIssuer, "snap-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
         self.assertEqual(
             {"macaroon": macaroon.serialize(), "user": "+launchpad-services"},
             self.git_api.authenticateWithPassword("", macaroon.serialize()))
@@ -1157,7 +1226,7 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         ref_path = "refs/heads/master"
         self.assertHasRefPermissions(
             LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
-            macaroon_raw=macaroons[0])
+            macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertHasRefPermissions(
@@ -1178,6 +1247,25 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertHasRefPermissions(
             code_imports[0].registrant, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[0].serialize())
+
+    def test_checkRefPermissions_private_snap_build(self):
+        # A builder with a suitable macaroon cannot write to a repository,
+        # even if it is associated with a running private snap build.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
+        with person_logged_in(self.factory.makePerson()) as owner:
+            [ref] = self.factory.makeGitRefs(
+                owner=owner, information_type=InformationType.USERDATA)
+            build = self.factory.makeSnapBuild(
+                requester=owner, owner=owner, git_ref=ref, private=True)
+            issuer = getUtility(IMacaroonIssuer, "snap-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+            build.updateStatus(BuildStatus.BUILDING)
+            path = ref.path.encode("UTF-8")
+        self.assertHasRefPermissions(
+            LAUNCHPAD_SERVICES, ref.repository, [path], {path: []},
+            macaroon_raw=macaroon.serialize())
 
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):
