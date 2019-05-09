@@ -116,7 +116,9 @@ from lp.app.errors import (
     )
 from lp.app.interfaces.headings import IHeadingBreadcrumb
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import valid_email
+from lp.app.validators.username import username_validator
 from lp.app.widgets.image import ImageChangeWidget
 from lp.app.widgets.itemswidgets import (
     LaunchpadDropdownWidget,
@@ -2720,9 +2722,22 @@ class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
     def validate(self, data):
         """If the name changed, warn the user about the implications."""
         new_name = data.get('name')
+
+        # Name was not changed, carry on ...
+        if not new_name or new_name == self.context.name:
+            return
+
+        # Ensure the new (user) name is valid.
+        try:
+            username_validator(new_name)
+        except LaunchpadValidationError as err:
+            self.setFieldError('name', str(err))
+            return
+
+        # Ensure the user is aware of the implications of changing username.
         bypass_check = self.request.form_ng.getOne(
             'i_know_this_is_an_openid_security_issue', 0)
-        if (new_name and new_name != self.context.name and not bypass_check):
+        if not bypass_check:
             # Warn the user that they might shoot themselves in the foot.
             self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
