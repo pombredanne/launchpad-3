@@ -103,6 +103,17 @@ def _is_issuer_internal(verified):
 
     :param verified: An `IMacaroonVerificationResult`.
     """
+    return verified.issuer_name in ("code-import-job", "snap-build")
+
+
+def _can_internal_issuer_write(verified):
+    """Does this internal-only issuer have write access?
+
+    Some macaroons used by internal services are intended for writing to the
+    repository; others only allow read access.
+
+    :param verified: An `IMacaroonVerificationResult`.
+    """
     return verified.issuer_name == "code-import-job"
 
 
@@ -162,7 +173,7 @@ class GitAPI(LaunchpadXMLRPCView):
                 # so we can bypass other checks.  This is only permitted for
                 # selected macaroon issuers used by internal services.
                 hosting_path = naked_repository.getInternalPath()
-                writable = True
+                writable = _can_internal_issuer_write(verified)
                 private = naked_repository.private
 
             # In any other case, the macaroon constrains the permissions of
@@ -387,7 +398,7 @@ class GitAPI(LaunchpadXMLRPCView):
             verified = self._verifyMacaroon(password)
             if verified:
                 auth_params = {"macaroon": password}
-                if verified.issuer_name == "code-import-job":
+                if _is_issuer_internal(verified):
                     auth_params["user"] = LAUNCHPAD_SERVICES
                 return auth_params
         # Only macaroons are supported for password authentication.
@@ -432,6 +443,9 @@ class GitAPI(LaunchpadXMLRPCView):
                     raise faults.Unauthorized()
 
                 if internal:
+                    if not _can_internal_issuer_write(verified):
+                        raise faults.Unauthorized()
+
                     # We know that the authentication parameters
                     # specifically grant access to this repository because
                     # we were able to verify the macaroon using the

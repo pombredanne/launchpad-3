@@ -628,6 +628,11 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
         # Circular import.
         from lp.snappy.model.snap import Snap
 
+        if context is None:
+            # We're only verifying that the macaroon could be valid for some
+            # context.
+            return True
+
         try:
             build_id = int(caveat_value)
         except ValueError:
