@@ -182,7 +182,7 @@ Let's try requesting an export in MO format:
     >>> emails = pop_notifications()
     >>> len(emails)
     1
-    >>> print_emails(notifications=emails)
+    >>> print_emails(notifications=emails, decode=True)
     From: ...
     To: downloader@example.com
     Subject: Launchpad translation download: Ubuntu Hoary pmount - Czech
@@ -198,10 +198,9 @@ Let's try requesting an export in MO format:
     download these translations again, you will have to request
     them again at
     <BLANKLINE>
-      http://translations.launchpad.../pmount/+pots/pmoun=
-    t/cs/+export
+      http://translations.launchpad.../pmount/+pots/pmount/cs/+export
     <BLANKLINE>
-    -- =
+    -- 
     Automatic message from Launchpad.net.
     ----------------------------------------
 
