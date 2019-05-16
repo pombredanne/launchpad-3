@@ -36,8 +36,7 @@ elif [ -d .bzr ]; then
     bzr diff > /dev/null || diff_status=$?
     if [ $diff_status -eq 0 ] ; then
         # No uncommitted changes in the tree.
-        bzr status | grep "^Current thread:" > /dev/null
-        if [ $? -eq 0 ] ; then
+        if bzr status | grep -q "^Current thread:"; then
             # This is a loom, lint changes relative to the lower thread.
             rev_option="-r thread:"
         elif [ "$(bzr pipes | sed -n -e "/^\\*/q;p" | wc -l)" -gt 0 ]; then
