@@ -332,6 +332,10 @@ class ISnapBuildRequest(Interface):
         title=u"The source archive for builds produced by this request",
         required=True, readonly=True)
 
+    channels = Dict(
+        title=_("Source snap channels for builds produced by this request"),
+        key_type=TextLine(), required=False, readonly=True)
+
 
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""

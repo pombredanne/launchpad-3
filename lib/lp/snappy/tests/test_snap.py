@@ -308,6 +308,19 @@ class TestSnap(TestCaseWithFactory):
         snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, arches[1],
             PackagePublishingPocket.UPDATES)
+        # channels=None and channels={} are treated as equivalent, but
+        # anything else allows a new build.
+        self.assertRaises(
+            SnapBuildAlreadyPending, snap.requestBuild,
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.UPDATES, channels={})
+        snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.UPDATES, channels={"core": "edge"})
+        self.assertRaises(
+            SnapBuildAlreadyPending, snap.requestBuild,
+            snap.owner, snap.distro_series.main_archive, arches[0],
+            PackagePublishingPocket.UPDATES, channels={"core": "edge"})
         # Changing the status of the old build allows a new build.
         old_build.updateStatus(BuildStatus.BUILDING)
         old_build.updateStatus(BuildStatus.FULLYBUILT)

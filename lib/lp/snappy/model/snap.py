@@ -244,6 +244,11 @@ class SnapBuildRequest:
         """See `ISnapBuildRequest`."""
         return self._job.archive
 
+    @property
+    def channels(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.channels
+
 
 @implementer(ISnap, IHasOwner)
 class Snap(Storm, WebhookTargetMixin):
@@ -627,13 +632,18 @@ class Snap(Storm, WebhookTargetMixin):
         if not self._isArchitectureAllowed(distro_arch_series, pocket):
             raise SnapBuildDisallowedArchitecture(distro_arch_series, pocket)
 
+        if not channels:
+            channels_clause = Or(
+                SnapBuild.channels == None, SnapBuild.channels == {})
+        else:
+            channels_clause = SnapBuild.channels == channels
         pending = IStore(self).find(
             SnapBuild,
             SnapBuild.snap_id == self.id,
             SnapBuild.archive_id == archive.id,
             SnapBuild.distro_arch_series_id == distro_arch_series.id,
             SnapBuild.pocket == pocket,
-            SnapBuild.channels == channels,
+            channels_clause,
             SnapBuild.status == BuildStatus.NEEDSBUILD)
         if pending.any() is not None:
             raise SnapBuildAlreadyPending

@@ -29,6 +29,7 @@ from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import Interface
 from zope.schema import (
     Choice,
+    Dict,
     List,
     TextLine,
     )
@@ -294,10 +295,14 @@ class SnapRequestBuildsView(LaunchpadFormView):
             description=(
                 u'The package stream within the source distribution series '
                 u'to use when building the snap package.'))
+        channels = Dict(
+            title=u'Source snap channels', key_type=TextLine(), required=True,
+            description=ISnap['auto_build_channels'].description)
 
     custom_widget_archive = SnapArchiveWidget
     custom_widget_distro_arch_series = LabeledMultiCheckBoxWidget
     custom_widget_pocket = LaunchpadDropdownWidget
+    custom_widget_channels = SnapBuildChannelsWidget
 
     help_links = {
         "pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -320,6 +325,7 @@ class SnapRequestBuildsView(LaunchpadFormView):
                 else self.context.distro_series.main_archive),
             'distro_arch_series': [],
             'pocket': PackagePublishingPocket.UPDATES,
+            'channels': self.context.auto_build_channels,
             }
 
     def requestBuild(self, data):
@@ -336,7 +342,8 @@ class SnapRequestBuildsView(LaunchpadFormView):
         for arch in data['distro_arch_series']:
             try:
                 build = self.context.requestBuild(
-                    self.user, data['archive'], arch, data['pocket'])
+                    self.user, data['archive'], arch, data['pocket'],
+                    channels=data['channels'])
                 builds.append(build)
             except SnapBuildAlreadyPending:
                 already_pending.append(arch)
@@ -356,7 +363,8 @@ class SnapRequestBuildsView(LaunchpadFormView):
             self.request.response.addNotification(notification_text)
         else:
             self.context.requestBuilds(
-                self.user, data['archive'], data['pocket'])
+                self.user, data['archive'], data['pocket'],
+                channels=data['channels'])
             self.request.response.addNotification(
                 _('Builds will be dispatched soon.'))
         self.next_url = self.cancel_url
