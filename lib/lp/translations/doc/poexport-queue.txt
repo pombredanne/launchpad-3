@@ -74,12 +74,12 @@ As usual, when there is an error, two emails should be sent:
 
 One is for the user with the error notification.
 
-    >>> print_emails(notifications=[carlos_email])
+    >>> print_emails(notifications=[carlos_email], decode=True)
     From: ...
     To: carlos@canonical.com
     Subject: Launchpad translation download: Evolution trunk -
     evolution-2.2 template
-    Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+    Hello Carlos Perelló Marín,
     <BLANKLINE>
     Launchpad encountered problems exporting the files you requested.
     The Launchpad Translations team has been notified of this problem.
@@ -87,10 +87,9 @@ One is for the user with the error notification.
     <BLANKLINE>
     If you want to retry your request, you can do so at
     <BLANKLINE>
-      http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
-    port.
+      http://translations.launchpad.../trunk/+pots/evolution-2.2/+export.
     <BLANKLINE>
-    -- =
+    -- 
     Automatic message from Launchpad.net.
     <BLANKLINE>
     ----------------------------------------
@@ -98,7 +97,7 @@ One is for the user with the error notification.
 And the other to the admins.  This one lists the files that were being
 exported as context to help tracking down any bugs.
 
-    >>> print_emails(notifications=[admin_email])
+    >>> print_emails(notifications=[admin_email], decode=True)
     From: ...
     To: launchpad-error-reports@lists.canonical.com
     Subject: Launchpad translation download errors: Evolution trunk -
@@ -106,10 +105,9 @@ exported as context to help tracking down any bugs.
     Hello Launchpad administrators,
     <BLANKLINE>
     Launchpad encountered problems exporting translation files
-    requested by Carlos Perell=C3=B3 Mar=C3=ADn (carlos) at
+    requested by Carlos Perelló Marín (carlos) at
     <BLANKLINE>
-      http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
-    port
+      http://translations.launchpad.../trunk/+pots/evolution-2.2/+export
     <BLANKLINE>
     This means we have a bug in Launchpad that needs to be fixed
     before this export can proceed.  Here is the error we got:
@@ -123,7 +121,7 @@ exported as context to help tracking down any bugs.
       * evolution-2.2 in Evolution trunk
       * Spanish (es) translation of evolution-2.2 in Evolution trunk
     <BLANKLINE>
-    -- =
+    -- 
     Automatic message from Launchpad.net.
     <BLANKLINE>
     ----------------------------------------
@@ -153,12 +151,12 @@ Those are specially handled and reported.
 The user's notification looks no different from that for an ordinary
 error.
 
-    >>> print_emails(notifications=[carlos_email])
+    >>> print_emails(notifications=[carlos_email], decode=True)
     From: ...
     To: carlos@canonical.com
     Subject: Launchpad translation download: Evolution trunk -
     evolution-2.2 template
-    Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+    Hello Carlos Perelló Marín,
     <BLANKLINE>
     Launchpad encountered problems exporting the files you requested.
     The Launchpad Translations team has been notified of this problem.
@@ -166,10 +164,9 @@ error.
     <BLANKLINE>
     If you want to retry your request, you can do so at
     <BLANKLINE>
-      http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
-    port.
+      http://translations.launchpad.../trunk/+pots/evolution-2.2/+export.
     <BLANKLINE>
-    -- =
+    -- 
     Automatic message from Launchpad.net.
     <BLANKLINE>
     ----------------------------------------
@@ -177,7 +174,7 @@ error.
 The one for the administrators, however, does not include the
 unprintable exception text.
 
-    >>> print_emails(notifications=[admin_email])
+    >>> print_emails(notifications=[admin_email], decode=True)
     From: ...
     To: launchpad-error-reports@lists.canonical.com
     Subject: Launchpad translation download errors: Evolution trunk -
@@ -188,14 +185,13 @@ unprintable exception text.
     failure during a translation export requested by Carlos ...
     (carlos) at
     <BLANKLINE>
-      http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
-    port
+      http://translations.launchpad.../trunk/+pots/evolution-2.2/+export
     <BLANKLINE>
     Failed export request included:
       * evolution-2.2 in Evolution trunk
       * Spanish (es) translation of evolution-2.2 in Evolution trunk
     <BLANKLINE>
-    -- =
+    -- 
     Automatic message from Launchpad.net.
     <BLANKLINE>
     ----------------------------------------
@@ -224,12 +220,12 @@ In this case, there are no errors, so we should get just a single email
     >>> len(test_emails)
     1
 
-    >>> print_emails(notifications=test_emails)
+    >>> print_emails(notifications=test_emails, decode=True)
     From: ...
     To: carlos@canonical.com
     Subject: Launchpad translation download: Evolution trunk -
     evolution-2.2 template
-    Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+    Hello Carlos Perelló Marín,
     <BLANKLINE>
     The translation files you requested from Launchpad are ready for
     download from the following location:
@@ -240,10 +236,9 @@ In this case, there are no errors, so we should get just a single email
     download these translations again, you will have to request
     them again at
     <BLANKLINE>
-      http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
-    port
+      http://translations.launchpad.../trunk/+pots/evolution-2.2/+export
     <BLANKLINE>
-    -- =
+    -- 
     Automatic message from Launchpad.net.
     <BLANKLINE>
     ----------------------------------------
@@ -294,12 +289,12 @@ And a confirmation email was sent to carlos, the importer.
 
 The confirmation email shows no errors at all.
 
-    >>> print_emails(notifications=test_emails)
+    >>> print_emails(notifications=test_emails, decode=True)
     From: ...
     To: carlos@canonical.com
     Subject: Launchpad translation download: Evolution trunk -
     evolution-2.2 template
-    Hello Carlos Perell=C3=B3 Mar=C3=ADn,
+    Hello Carlos Perelló Marín,
     <BLANKLINE>
     The translation files you requested from Launchpad are ready for
     download from the following location:
@@ -310,10 +305,9 @@ The confirmation email shows no errors at all.
     download these translations again, you will have to request
     them again at
     <BLANKLINE>
-      http://translations.launchpad.../trunk/+pots/evolution-2.2/+ex=
-    port
+      http://translations.launchpad.../trunk/+pots/evolution-2.2/+export
     <BLANKLINE>
-    -- =
+    -- 
     Automatic message from Launchpad.net.
     <BLANKLINE>
     ----------------------------------------
