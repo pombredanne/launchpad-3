@@ -19,7 +19,7 @@ fi
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
 pgversion=
-for try_pgversion in 9.3 9.5 9.6 10
+for try_pgversion in 10
 do
   sudo grep -qs "^auto" /etc/postgresql/$try_pgversion/main/start.conf
   if [ $? -eq 0 ]; then

@@ -677,7 +677,7 @@ class TestSnapAdminView(BaseTestSnapView):
         browser.getControl("Private").selected = False
         browser.getControl("Update snap package").click()
         self.assertEqual(
-            'This snap contains private information and cannot be public.',
+            'A public snap cannot have a private owner.',
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
     def test_admin_snap_sets_date_last_modified(self):
@@ -801,6 +801,71 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertEqual(
             "There is already a snap package owned by Test Person with this "
             "name.",
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
+    def test_edit_public_snap_private_owner(self):
+        series = self.factory.makeUbuntuDistroSeries()
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries(
+                usable_distro_series=[series])
+        login_person(self.person)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, distroseries=series,
+            store_series=snappy_series)
+        private_team = self.factory.makeTeam(
+            owner=self.person, visibility=PersonVisibility.PRIVATE)
+        private_team_name = private_team.name
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Owner").value = [private_team_name]
+        browser.getControl("Update snap package").click()
+        self.assertEqual(
+            "A public snap cannot have a private owner.",
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
+    def test_edit_public_snap_private_branch(self):
+        series = self.factory.makeUbuntuDistroSeries()
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries(
+                usable_distro_series=[series])
+        login_person(self.person)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, distroseries=series,
+            branch=self.factory.makeAnyBranch(), store_series=snappy_series)
+        private_branch = self.factory.makeAnyBranch(
+            owner=self.person,
+            information_type=InformationType.PRIVATESECURITY)
+        private_branch_name = private_branch.unique_name
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Bazaar branch").value = private_branch_name
+        browser.getControl("Update snap package").click()
+        self.assertEqual(
+            "A public snap cannot have a private branch.",
+            extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
+    def test_edit_public_snap_private_git_ref(self):
+        series = self.factory.makeUbuntuDistroSeries()
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries(
+                usable_distro_series=[series])
+        login_person(self.person)
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, distroseries=series,
+            git_ref=self.factory.makeGitRefs()[0], store_series=snappy_series)
+        login_person(self.person)
+        [private_ref] = self.factory.makeGitRefs(
+            owner=self.person,
+            information_type=InformationType.PRIVATESECURITY)
+        private_ref_identity = private_ref.repository.identity
+        private_ref_path = private_ref.path
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Git repository").value = private_ref_identity
+        browser.getControl("Git branch").value = private_ref_path
+        browser.getControl("Update snap package").click()
+        self.assertEqual(
+            "A public snap cannot have a private repository.",
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
     def test_edit_snap_git_url(self):
@@ -1603,6 +1668,14 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
             \(\?\)
             The package stream within the source distribution series to use
             when building the snap package.
+            Source snap channels:
+            core
+            snapcraft
+            The channels to use for build tools when building the snap
+            package.
+            If unset, or if the channel for snapcraft is set to "apt", the
+            default is to install snapcraft from the source archive using
+            apt.
             or
             Cancel
             """,
@@ -1652,6 +1725,21 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
         builds = self.snap.pending_builds
         self.assertEqual([ppa], [build.archive for build in builds])
 
+    def test_request_builds_with_architectures_channels(self):
+        # Selecting different channels with architectures selected creates
+        # builds using those channels.
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        browser.getControl(name="field.channels.core").value = "edge"
+        browser.getControl("amd64").selected = True
+        self.assertFalse(browser.getControl("i386").selected)
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        builds = self.snap.pending_builds
+        self.assertEqual(
+            [{"core": "edge"}], [build.channels for build in builds])
+
     def test_request_builds_with_architectures_rejects_duplicate(self):
         # A duplicate build request with architectures selected causes a
         # notification.
@@ -1688,7 +1776,7 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
             _job=MatchesStructure(
                 requester=Equals(self.person),
                 pocket=Equals(PackagePublishingPocket.UPDATES),
-                channels=Is(None))))
+                channels=Equals({}))))
 
     def test_request_builds_no_architectures_ppa(self):
         # Selecting a different archive with no architectures selected
@@ -1706,6 +1794,20 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
         login_person(self.person)
         [request] = self.snap.pending_build_requests
         self.assertEqual(ppa, request.archive)
+
+    def test_request_builds_no_architectures_channels(self):
+        # Selecting different channels with no architectures selected
+        # creates a build request using those channels.
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        browser.getControl(name="field.channels.core").value = "edge"
+        self.assertFalse(browser.getControl("amd64").selected)
+        self.assertFalse(browser.getControl("i386").selected)
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        [request] = self.snap.pending_build_requests
+        self.assertEqual({"core": "edge"}, request.channels)
 
     def test_request_builds_no_distro_series(self):
         # Requesting builds of a snap configured to infer an appropriate
@@ -1727,4 +1829,4 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
             _job=MatchesStructure(
                 requester=Equals(self.person),
                 pocket=Equals(PackagePublishingPocket.UPDATES),
-                channels=Is(None))))
+                channels=Equals({}))))

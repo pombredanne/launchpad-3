@@ -67,7 +67,10 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.services.propertycache import (
     cachedproperty,
@@ -596,23 +599,25 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
     identifier = "snap-build"
     issuable_via_authserver = True
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`.
+    def checkIssuingContext(self, context, **kwargs):
+        """See `MacaroonIssuerBase`.
 
-        For issuing, the context is an `ISnapBuild` or its ID.
+        For issuing, the context is an `ISnapBuild`.
         """
-        if ISnapBuild.providedBy(context):
-            pass
-        elif isinstance(context, int):
-            context = getUtility(ISnapBuildSet).getByID(context)
-        else:
-            raise ValueError("Cannot handle context %r." % context)
+        if not ISnapBuild.providedBy(context):
+            raise BadMacaroonContext(context)
         if not removeSecurityProxy(context).is_private:
-            raise ValueError("Refusing to issue macaroon for public build.")
-        return super(SnapBuildMacaroonIssuer, self).issueMacaroon(
-            removeSecurityProxy(context).id)
+            raise BadMacaroonContext(
+                context, "Refusing to issue macaroon for public build.")
+        return removeSecurityProxy(context).id
 
-    def verifyCaveat(self, caveat_text, context):
+    def checkVerificationContext(self, context, **kwargs):
+        """See `MacaroonIssuerBase`."""
+        if not IGitRepository.providedBy(context):
+            raise BadMacaroonContext(context)
+        return context
+
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
         """See `MacaroonIssuerBase`.
 
         For verification, the context is an `IGitRepository`.  We check that
@@ -623,8 +628,13 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
         # Circular import.
         from lp.snappy.model.snap import Snap
 
+        if context is None:
+            # We're only verifying that the macaroon could be valid for some
+            # context.
+            return True
+
         try:
-            build_id = int(caveat_text)
+            build_id = int(caveat_value)
         except ValueError:
             return False
         return not IStore(SnapBuild).find(
@@ -633,10 +643,3 @@ class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
             SnapBuild.snap_id == Snap.id,
             Snap.git_repository == context,
             SnapBuild.status == BuildStatus.BUILDING).is_empty()
-
-    def verifyMacaroon(self, macaroon, context):
-        """See `IMacaroonIssuer`."""
-        if not IGitRepository.providedBy(context):
-            return False
-        return super(SnapBuildMacaroonIssuer, self).verifyMacaroon(
-            macaroon, context)

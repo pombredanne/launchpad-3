@@ -31,7 +31,11 @@ from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
+from lp.services.macaroons.testing import MacaroonTestMixin
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
@@ -910,7 +914,8 @@ class TestCalculateScore(TestCaseWithFactory):
                 archive, getUtility(ILaunchpadCelebrities).ppa_admin)
 
 
-class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
+class TestBinaryPackageBuildMacaroonIssuer(
+        MacaroonTestMixin, TestCaseWithFactory):
     """Test BinaryPackageBuild macaroon issuing and verification."""
 
     layer = LaunchpadZopelessLayer
@@ -924,7 +929,8 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         issuer = getUtility(IMacaroonIssuer, "binary-package-build")
         self.assertRaises(
-            ValueError, removeSecurityProxy(issuer).issueMacaroon, build)
+            BadMacaroonContext, removeSecurityProxy(issuer).issueMacaroon,
+            build)
 
     def test_issueMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -935,7 +941,7 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         self.assertEqual("binary-package-build", macaroon.identifier)
         self.assertThat(macaroon.caveats, MatchesListwise([
             MatchesStructure.byEquality(
-                caveat_id="lp.binary-package-build %s" % build.id),
+                caveat_id="lp.principal.binary-package-build %s" % build.id),
             ]))
 
     def test_issueMacaroon_not_via_authserver(self):
@@ -945,83 +951,65 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         authserver = AuthServerAPIView(private_root.authserver, TestRequest())
         self.assertEqual(
             faults.PermissionDenied(),
-            authserver.issueMacaroon("binary-package-build", build))
-
-    def test_checkMacaroonIssuer_good(self):
-        build = self.factory.makeBinaryPackageBuild(
-            archive=self.factory.makeArchive(private=True))
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
-        self.assertTrue(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_location(self):
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = Macaroon(
-            location="another-location",
-            key=removeSecurityProxy(issuer)._root_secret)
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
-
-    def test_checkMacaroonIssuer_wrong_key(self):
-        issuer = getUtility(IMacaroonIssuer, "binary-package-build")
-        macaroon = Macaroon(
-            location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
+            authserver.issueMacaroon(
+                "binary-package-build", "BinaryPackageBuild", build))
 
     def test_verifyMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(
             archive=self.factory.makeArchive(private=True))
         sprf = self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=build.source_package_release)
-        lfa_id = sprf.libraryfile.id
         build.updateStatus(BuildStatus.BUILDING)
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertTrue(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonVerifies(issuer, macaroon, sprf.libraryfile)
 
     def test_verifyMacaroon_wrong_location(self):
         build = self.factory.makeBinaryPackageBuild(
             archive=self.factory.makeArchive(private=True))
         sprf = self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=build.source_package_release)
-        lfa_id = sprf.libraryfile.id
         build.updateStatus(BuildStatus.BUILDING)
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = Macaroon(
             location="another-location", key=issuer._root_secret)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Macaroon has unknown location 'another-location'."],
+            issuer, macaroon, sprf.libraryfile)
 
     def test_verifyMacaroon_wrong_key(self):
         build = self.factory.makeBinaryPackageBuild(
             archive=self.factory.makeArchive(private=True))
         sprf = self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=build.source_package_release)
-        lfa_id = sprf.libraryfile.id
         build.updateStatus(BuildStatus.BUILDING)
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Signatures do not match"], issuer, macaroon, sprf.libraryfile)
 
     def test_verifyMacaroon_not_building(self):
         build = self.factory.makeBinaryPackageBuild(
             archive=self.factory.makeArchive(private=True))
         sprf = self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=build.source_package_release)
-        lfa_id = sprf.libraryfile.id
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.principal.binary-package-build %s' "
+             "failed." % build.id],
+            issuer, macaroon, sprf.libraryfile)
 
     def test_verifyMacaroon_wrong_build(self):
         build = self.factory.makeBinaryPackageBuild(
             archive=self.factory.makeArchive(private=True))
         sprf = self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=build.source_package_release)
-        lfa_id = sprf.libraryfile.id
         build.updateStatus(BuildStatus.BUILDING)
         other_build = self.factory.makeBinaryPackageBuild(
             archive=self.factory.makeArchive(private=True))
@@ -1029,7 +1017,10 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(other_build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.principal.binary-package-build %s' "
+             "failed." % other_build.id],
+            issuer, macaroon, sprf.libraryfile)
 
     def test_verifyMacaroon_wrong_file(self):
         build = self.factory.makeBinaryPackageBuild(
@@ -1037,9 +1028,11 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         self.factory.makeSourcePackageReleaseFile(
             sourcepackagerelease=build.source_package_release)
         lfa = self.factory.makeLibraryFileAlias()
-        lfa_id = lfa.id
         build.updateStatus(BuildStatus.BUILDING)
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
+        self.assertMacaroonDoesNotVerify(
+            ["Caveat check for 'lp.principal.binary-package-build %s' "
+             "failed." % build.id],
+            issuer, macaroon, lfa)

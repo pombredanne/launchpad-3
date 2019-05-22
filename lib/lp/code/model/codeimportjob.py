@@ -27,6 +27,7 @@ from lp.code.enums import (
     CodeImportMachineState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    GitRepositoryType,
     RevisionControlSystems,
     )
 from lp.code.interfaces.branch import IBranch
@@ -34,6 +35,7 @@ from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJob,
@@ -43,6 +45,7 @@ from lp.code.interfaces.codeimportjob import (
     )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.config import config
@@ -54,7 +57,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.interfaces import (
+    BadMacaroonContext,
+    IMacaroonIssuer,
+    )
 from lp.services.macaroons.model import MacaroonIssuerBase
 
 
@@ -422,20 +428,43 @@ class CodeImportJobMacaroonIssuer(MacaroonIssuerBase):
                 "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
-    def issueMacaroon(self, context):
-        """See `IMacaroonIssuer`."""
-        assert context.code_import.git_repository is not None
-        return super(CodeImportJobMacaroonIssuer, self).issueMacaroon(
-            context.id)
-
-    def verifyCaveat(self, caveat_text, context):
+    def checkIssuingContext(self, context, **kwargs):
         """See `MacaroonIssuerBase`."""
-        return caveat_text == str(context.id)
+        if context.code_import.git_repository is None:
+            raise BadMacaroonContext(
+                context, "context.code_import.git_repository is None")
+        return context.id
 
-    def verifyMacaroon(self, macaroon, context):
-        """See `IMacaroonIssuer`."""
-        if (not ICodeImportJob.providedBy(context) or
-                context.state != CodeImportJobState.RUNNING):
-            return False
-        return super(CodeImportJobMacaroonIssuer, self).verifyMacaroon(
-            macaroon, context)
+    def checkVerificationContext(self, context, **kwargs):
+        """See `MacaroonIssuerBase`.
+
+        For verification, the context may be an `ICodeImportJob`, in which
+        case we check that the context job is currently running; or it may
+        be an `IGitRepository`, in which case we check that the repository
+        is an imported repository with an associated code import, and then
+        perform the previously-stated check on its code import job.
+        """
+        if IGitRepository.providedBy(context):
+            if context.repository_type != GitRepositoryType.IMPORTED:
+                raise BadMacaroonContext(
+                    context, "%r is not an IMPORTED repository." % context)
+            code_import = getUtility(ICodeImportSet).getByGitRepository(
+                context)
+            if code_import is None:
+                raise BadMacaroonContext(
+                    context, "%r does not have a code import." % context)
+            context = code_import.import_job
+        if not ICodeImportJob.providedBy(context):
+            raise BadMacaroonContext(context)
+        if context.state != CodeImportJobState.RUNNING:
+            raise BadMacaroonContext(
+                context, "%r is not in the RUNNING state." % context)
+        return context
+
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
+        """See `MacaroonIssuerBase`."""
+        if context is None:
+            # We're only verifying that the macaroon could be valid for some
+            # context.
+            return True
+        return caveat_value == str(context.id)

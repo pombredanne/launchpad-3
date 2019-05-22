@@ -21,10 +21,10 @@ The POST data consists of the following fields:
   * submission_data: An XML file containing the collected data. This file is
     simply stored as a Librarian file, and parsed later by a cron job.
 
+    >>> import io
     >>> from zope.component import getUtility
-    >>> from StringIO import StringIO
     >>> from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
-    >>> data = StringIO('some data.')
+    >>> data = io.BytesIO(b'some data.')
     >>> data.filename = 'hardware-info'
     >>> form={'field.date_created':    u'2007-08-01',
     ...       'field.format':          u'VERSION_1',
@@ -80,7 +80,7 @@ identical data a second time leads to an error.
 
     >>> submit_view = create_initialized_view(app, name='+submit', form=form)
     >>> for error in submit_view.errors:
-    ...     print error.doc()
+    ...     print(error.doc())
     Submission key already exists.
 
 If the field distribution contains a name which is not known in the
@@ -92,7 +92,7 @@ Launchpad database, the distroarchseries field is None.
     >>> submit_view = create_initialized_view(
     ...     app, name='+submit', form=invalid_form)
     >>> submission = submission_set.getBySubmissionKey(u'unique-id-2')
-    >>> print submission.distroarchseries
+    >>> print(submission.distroarchseries)
     None
 
 If distribution is known, but distroseries or architecture are unknown
@@ -103,7 +103,7 @@ to Launchpad, we refuse the submissions.
     >>> invalid_form['field.distroseries'] = 'no release'
     >>> submit_view = create_initialized_view(
     ...     app, name='+submit', form=invalid_form)
-    >>> print submission_set.getBySubmissionKey(u'unique-id-3')
+    >>> print(submission_set.getBySubmissionKey(u'unique-id-3'))
     None
 
     >>> form['field.submission_key'] = u'unique-id-4'
@@ -111,7 +111,7 @@ to Launchpad, we refuse the submissions.
     >>> invalid_form['field.architecture'] = 'no architecture'
     >>> submit_view = create_initialized_view(
     ...     app, name='+submit', form=invalid_form)
-    >>> print submission_set.getBySubmissionKey(u'unique-id-4')
+    >>> print(submission_set.getBySubmissionKey(u'unique-id-4'))
     None
 
 The `date_created` field must contain a valid date.
@@ -122,7 +122,7 @@ The `date_created` field must contain a valid date.
     >>> submit_view = create_initialized_view(
     ...     app, name='+submit', form=invalid_form)
     >>> for error in submit_view.errors:
-    ...     print error.doc()
+    ...     print(error.doc())
     Invalid datetime data
 
 The `format` field must contain a value that matches the DBEnumeratedType
@@ -133,7 +133,7 @@ HWDBSubmissionFormat.
     >>> submit_view = create_initialized_view(
     ...     app, name='+submit', form=invalid_form)
     >>> for error in submit_view.errors:
-    ...     print error.doc()
+    ...     print(error.doc())
     Invalid value
 
 The field `submission_key` may contain only ASCII data.
@@ -143,7 +143,7 @@ The field `submission_key` may contain only ASCII data.
     >>> submit_view = create_initialized_view(
     ...     app, name='+submit', form=invalid_form)
     >>> for error in submit_view.errors:
-    ...     print error.doc()
+    ...     print(error.doc())
     Invalid textual data
 
 The field `emailaddress` must contain a formally valid email address.
@@ -153,7 +153,7 @@ The field `emailaddress` must contain a formally valid email address.
     >>> submit_view = create_initialized_view(
     ...     app, name='+submit', form=invalid_form)
     >>> for error in submit_view.errors:
-    ...     print error.doc()
+    ...     print(error.doc())
     Invalid email address
 
 All fields are required.  With normal form processing, it's impossible not to
@@ -171,10 +171,11 @@ those widgets are checkboxes and menus.
     ...     invalid_form[field] = u''
     ...     submit_view = create_initialized_view(
     ...         app, name='+submit', form=invalid_form)
-    ...     print field
+    ...     print(field)
     ...     for error in submit_view.errors:
     ...         field_name = error.field_name
-    ...         print '   ', field_name, submit_view.getFieldError(field_name)
+    ...         print('   ', field_name,
+    ...               submit_view.getFieldError(field_name))
     field.date_created
         date_created Required input is missing.
     field.submission_key
@@ -203,7 +204,8 @@ Teams can be owners of submissions.
     ...     config.root,
     ...     'lib/lp/hardwaredb/scripts/tests/'
     ...     'simple_valid_hwdb_submission.xml')
-    >>> valid_sample_data = StringIO(open(valid_sample_data_path).read())
+    >>> valid_sample_data = io.BytesIO(
+    ...     open(valid_sample_data_path, 'rb').read())
     >>> valid_sample_data.filename = 'simple_valid_hwdb_submission.xml'
     >>> team_form['field.submission_data'] = valid_sample_data
     >>> submit_view = create_initialized_view(
@@ -233,18 +235,18 @@ INVALID.
     >>> new_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED)
     >>> for submission in new_submissions:
-    ...     print submission.submission_key, submission.status.title
+    ...     print(submission.submission_key, submission.status.title)
     test_submission_id_1 Submitted
     unique-id-1 Submitted
     unique-id-68 Submitted
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
     >>> for submission in processed_submissions:
-    ...     print submission.submission_key, submission.status.title
+    ...     print(submission.submission_key, submission.status.title)
     sample-submission Processed
     >>> invalid_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID)
-    >>> print invalid_submissions.count()
+    >>> print(invalid_submissions.count())
     0
 
 The script process-hwdb-submissions.py takes the optional parameter
@@ -269,14 +271,14 @@ submissions are processed.
     ...     'cronscripts/process-hwdb-submissions.py', ['-m1'])
     >>> returnvalue
     0
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     ERROR   Parsing submission test_submission_id_1: syntax error:
     line 1, column 0
     INFO    OOPS-...
     INFO    Processed 0 valid and 1 invalid HWDB submissions
     <BLANKLINE>
-    >>> print out
+    >>> print(out)
     <BLANKLINE>
 
 Submission "test_submission_id_1" has now the state INVALID; the other
@@ -285,18 +287,18 @@ submissions are unchanged.
     >>> new_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED)
     >>> for submission in new_submissions:
-    ...     print submission.submission_key, submission.status.title
+    ...     print(submission.submission_key, submission.status.title)
     unique-id-1 Submitted
     unique-id-68 Submitted
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
     >>> for submission in processed_submissions:
-    ...     print submission.submission_key, submission.status.title
+    ...     print(submission.submission_key, submission.status.title)
     sample-submission Processed
     >>> invalid_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID)
     >>> for submission in invalid_submissions:
-    ...     print submission.submission_key, submission.status.title
+    ...     print(submission.submission_key, submission.status.title)
     test_submission_id_1 Invalid submission
 
 From the remaining two not yet processed submissions, one has invalid
@@ -306,13 +308,13 @@ data, the other submission is valid.
     ...     'cronscripts/process-hwdb-submissions.py')
     >>> returnvalue
     0
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     ERROR   Parsing submission unique-id-1: syntax error: line 1, column 0
     INFO    OOPS-...
     INFO    Processed 1 valid and 1 invalid HWDB submissions
     <BLANKLINE>
-    >>> print out
+    >>> print(out)
     <BLANKLINE>
 
 Now we have one valid, two invalid and no unprocessed submissions.
@@ -322,19 +324,19 @@ Now we have one valid, two invalid and no unprocessed submissions.
     >>> transaction.commit()
     >>> new_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED)
-    >>> print new_submissions.count()
+    >>> print(new_submissions.count())
     0
     >>> processed_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.PROCESSED)
     >>> for submission in processed_submissions:
-    ...     print submission.submission_key, submission.status.title
+    ...     print(submission.submission_key, submission.status.title)
     sample-submission Processed
     unique-id-68 Processed
 
     >>> invalid_submissions = submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.INVALID)
     >>> for submission in invalid_submissions:
-    ...     print submission.submission_key, submission.status.title
+    ...     print(submission.submission_key, submission.status.title)
     test_submission_id_1 Invalid submission
     unique-id-1 Invalid submission
 
@@ -350,14 +352,14 @@ that scripts.hwdbsubmissions.ProcessingLoop is called at least twice.
 Now we have 80 new submissions and three submissions that were processed
 in previous tests.
 
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count())
     80
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count())
     2
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.INVALID).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count())
     2
     >>> transaction.commit()
 
@@ -368,19 +370,19 @@ processing loop terminates properly, when the parameter "-m" is given.
     ...     'cronscripts/process-hwdb-submissions.py', ['-m60'])
     >>> returnvalue
     0
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     INFO    Processed 60 valid and 0 invalid HWDB submissions
-    >>> print out
+    >>> print(out)
     <BLANKLINE>
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count())
     20
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count())
     62
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.INVALID).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count())
     2
 
 Let's add more subscription so that we have more than max_chunk_size
@@ -391,31 +393,31 @@ unprocessed submissions and process all of them.
     ...     submit_view = create_initialized_view(
     ...         app, name='+submit', form=form)
 
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count())
     100
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count())
     62
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.INVALID).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count())
     2
     >>> transaction.commit()
     >>> returnvalue, out, err = run_script(
     ...     'cronscripts/process-hwdb-submissions.py')
     >>> returnvalue
     0
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-hwdbsubmissions.lock
     INFO    Processed 100 valid and 0 invalid HWDB submissions
-    >>> print out
+    >>> print(out)
     <BLANKLINE>
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.SUBMITTED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.SUBMITTED).count())
     0
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.PROCESSED).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.PROCESSED).count())
     162
-    >>> print submission_set.getByStatus(
-    ...     HWSubmissionProcessingStatus.INVALID).count()
+    >>> print(submission_set.getByStatus(
+    ...     HWSubmissionProcessingStatus.INVALID).count())
     2

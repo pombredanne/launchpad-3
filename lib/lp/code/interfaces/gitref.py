@@ -394,6 +394,12 @@ class IGitRefView(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         :return: A binary string with the blob content.
         """
 
+    def getLatestScanJob():
+        """Return the last IGitRefScanJobSource for the repository"""
+
+    def rescan():
+        """Force a rescan of the repository"""
+
 
 class IGitRefEdit(Interface):
     """IGitRef methods that require launchpad.Edit permission."""

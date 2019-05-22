@@ -314,7 +314,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             BinaryPackageBuild.id == BinaryPackageRelease.buildID,
             BinaryPackageBuild.source_package_release_id ==
                 self.sourcepackagereleaseID,
-            DistroArchSeries.distroseriesID == self.distroseriesID))
+            DistroArchSeries.distroseriesID == self.distroseriesID).order_by(
+                Desc(BinaryPackagePublishingHistory.id)))
 
         # Preload attached BinaryPackageReleases.
         bpr_ids = set(

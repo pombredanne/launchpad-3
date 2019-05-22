@@ -197,6 +197,12 @@
             name="++bug-links"
             template="../templates/branchmergeproposal-bug-links.pt"/>
     </browser:pages>
+    <browser:page
+        name="+rescan"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        class="lp.code.browser.branchmergeproposal.BranchMergeProposalRescanView"
+        permission="launchpad.Edit"
+        template="../templates/branchmergeproposal-rescan.pt"/>
     <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalVoteView"

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for base-layout.pt and its macros.
@@ -16,7 +16,7 @@ __metaclass__ = type
 from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.registry.interfaces.person import PersonVisibility
-from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.beautifulsoup import BeautifulSoup4 as BeautifulSoup
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -85,7 +85,7 @@ class TestBaseLayout(TestCaseWithFactory):
         self.assertTrue(head.title.string.startswith(view.page_title))
         # The shortcut icon for the browser chrome is provided.
         link_tag = head.link
-        self.assertEqual('shortcut icon', link_tag['rel'])
+        self.assertEqual(['shortcut', 'icon'], link_tag['rel'])
         self.assertEqual('/@@/launchpad.png', link_tag['href'])
         # The template loads the common scripts.
         load_script = find_tag_by_id(head, 'base-layout-load-scripts').name
@@ -97,17 +97,17 @@ class TestBaseLayout(TestCaseWithFactory):
         yui_layout = document.find('div', 'yui-d0')
         self.assertTrue(yui_layout is not None)
         self.assertEqual(
-            'login-logout', yui_layout.find(True, id='locationbar')['class'])
+            ['login-logout'], yui_layout.find(True, id='locationbar')['class'])
         self.assertEqual(
-            'yui-main', yui_layout.find(True, id='maincontent')['class'])
+            ['yui-main'], yui_layout.find(True, id='maincontent')['class'])
         self.assertEqual(
-            'footer', yui_layout.find(True, id='footer')['class'])
+            ['footer'], yui_layout.find(True, id='footer')['class'])
 
     def verify_watermark(self, document):
         # Verify the parts of a watermark.
         yui_layout = document.find('div', 'yui-d0')
         watermark = yui_layout.find(True, id='watermark')
-        self.assertEqual('watermark-apps-portlet', watermark['class'])
+        self.assertEqual(['watermark-apps-portlet'], watermark['class'])
         if self.context.is_team:
             self.assertEqual('/@@/team-logo', watermark.img['src'])
             self.assertEqual(
@@ -115,7 +115,7 @@ class TestBaseLayout(TestCaseWithFactory):
         else:
             self.assertEqual('/@@/person-logo', watermark.img['src'])
             self.assertEqual('Waffles', watermark.h2.a.string)
-        self.assertEqual('facetmenu', watermark.ul['class'])
+        self.assertEqual(['facetmenu'], watermark.ul['class'])
 
     def test_main_side(self):
         # The main_side layout has everything.
@@ -127,10 +127,10 @@ class TestBaseLayout(TestCaseWithFactory):
         document = find_tag_by_id(content, 'document')
         self.verify_base_layout_body_parts(document)
         classes = 'tab-overview main_side public yui3-skin-sam'.split()
-        self.assertEqual(classes, document['class'].split())
+        self.assertEqual(classes, document['class'])
         self.verify_watermark(document)
         self.assertEqual(
-            'registering', document.find(True, id='registration')['class'])
+            ['registering'], document.find(True, id='registration')['class'])
         self.assertEqual(
             'Registered on 2005-09-16 by Illuminati',
             document.find(True, id='registration').string.strip(),
@@ -139,7 +139,8 @@ class TestBaseLayout(TestCaseWithFactory):
             extract_text(document.find(True, id='maincontent')),
             'Main content of the page.')
         self.assertEqual(
-            'yui-b side', document.find(True, id='side-portlets')['class'])
+            ['yui-b', 'side'],
+            document.find(True, id='side-portlets')['class'])
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
     def test_main_only(self):
@@ -151,10 +152,10 @@ class TestBaseLayout(TestCaseWithFactory):
         document = find_tag_by_id(content, 'document')
         self.verify_base_layout_body_parts(document)
         classes = 'tab-overview main_only public yui3-skin-sam'.split()
-        self.assertEqual(classes, document['class'].split())
+        self.assertEqual(classes, document['class'])
         self.verify_watermark(document)
         self.assertEqual(
-            'registering', document.find(True, id='registration')['class'])
+            ['registering'], document.find(True, id='registration')['class'])
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual('form', document.find(True, id='globalsearch').name)
 
@@ -168,9 +169,9 @@ class TestBaseLayout(TestCaseWithFactory):
         self.verify_base_layout_body_parts(document)
         self.verify_watermark(document)
         classes = 'tab-overview searchless public yui3-skin-sam'.split()
-        self.assertEqual(classes, document['class'].split())
+        self.assertEqual(classes, document['class'])
         self.assertEqual(
-            'registering', document.find(True, id='registration')['class'])
+            ['registering'], document.find(True, id='registration')['class'])
         self.assertEqual(None, document.find(True, id='side-portlets'))
         self.assertEqual(None, document.find(True, id='globalsearch'))
 
@@ -180,7 +181,7 @@ class TestBaseLayout(TestCaseWithFactory):
         view._user = self.user
         content = BeautifulSoup(view())
         footer = find_tag_by_id(content, 'footer')
-        link = footer.find('a', text='Contact Launchpad Support').parent
+        link = footer.find('a', text='Contact Launchpad Support')
         self.assertEqual('/support', link['href'])
 
     def test_contact_support_anonymous(self):
@@ -189,7 +190,7 @@ class TestBaseLayout(TestCaseWithFactory):
         view._user = None
         content = BeautifulSoup(view())
         footer = find_tag_by_id(content, 'footer')
-        link = footer.find('a', text='Contact Launchpad Support').parent
+        link = footer.find('a', text='Contact Launchpad Support')
         self.assertEqual('/feedback', link['href'])
 
     def test_user_without_launchpad_view(self):

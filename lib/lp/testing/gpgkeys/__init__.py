@@ -28,7 +28,10 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.gpg.interfaces import (
+    get_gpgme_context,
+    IGPGHandler,
+    )
 
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'data')
@@ -127,11 +130,7 @@ def decrypt_content(content, password):
     if isinstance(content, unicode):
         raise TypeError('Content cannot be Unicode.')
 
-    # setup context
-    ctx = gpgme.Context()
-    # Stick to GnuPG 1.
-    ctx.set_engine_info(gpgme.PROTOCOL_OpenPGP, "/usr/bin/gpg", None)
-    ctx.armor = True
+    ctx = get_gpgme_context()
 
     # setup containers
     cipher = StringIO(content)

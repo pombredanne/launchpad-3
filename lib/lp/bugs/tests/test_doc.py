@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -479,6 +479,7 @@ special = {
         stdout_logging=False),
     'bugs-emailinterface.txt-processmail': LayeredDocFileSuite(
         '../tests/bugs-emailinterface.txt',
+        id_extensions=['bugs-emailinterface.txt-processmail'],
         setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=ProcessMailLayer,
         stdout_logging=False),

@@ -292,8 +292,8 @@ class TestFilenameRegularExpressions(TestCase):
         self.assertIs(None, re_issource.match('foo-bar_1.0.diff.xz'))
 
 
-class DdpkgExtractSourceTests(TestCase):
-    """Tests for dpkg_extract_source."""
+class TestExtractDpkgSource(TestCase):
+    """Tests for extract_dpkg_source."""
 
     def test_simple(self):
         # unpack_source unpacks in a temporary directory and returns the
@@ -307,9 +307,10 @@ class DdpkgExtractSourceTests(TestCase):
             ["THIS_IS_BAR", "debian"],
             os.listdir(os.path.join(temp_dir, "bar-1.0")))
 
-    def test_nonexistant(self):
+    def test_nonexistent(self):
         temp_dir = self.makeTemporaryDirectory()
         err = self.assertRaises(
             DpkgSourceError, extract_dpkg_source,
             "thispathdoesntexist", temp_dir)
-        self.assertEqual(2, err.result)
+        self.assertNotEqual(0, err.result)
+        self.assertEqual("", err.output)

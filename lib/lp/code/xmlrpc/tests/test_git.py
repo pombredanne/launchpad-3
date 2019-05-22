@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal Git API."""
@@ -20,12 +20,14 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.buildmaster.enums import BuildStatus
 from lp.code.enums import (
     GitGranteeType,
     GitRepositoryType,
     TargetRevisionControlSystems,
     )
 from lp.code.errors import GitRepositoryCreationFault
+from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
@@ -37,8 +39,10 @@ from lp.code.tests.helpers import GitHostingFixture
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import TeamMembershipPolicy
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp.escaping import html_escape
+from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -54,6 +58,17 @@ from lp.testing.layers import (
 from lp.xmlrpc import faults
 
 
+def _make_auth_params(requester, can_authenticate=False, macaroon_raw=None):
+    auth_params = {"can-authenticate": can_authenticate}
+    if requester == LAUNCHPAD_SERVICES:
+        auth_params["user"] = LAUNCHPAD_SERVICES
+    elif requester is not None:
+        auth_params["uid"] = requester.id
+    if macaroon_raw is not None:
+        auth_params["macaroon"] = macaroon_raw
+    return auth_params
+
+
 class TestGitAPIMixin:
     """Helper methods for `IGitAPI` tests, and security-relevant tests."""
 
@@ -66,11 +81,9 @@ class TestGitAPIMixin:
     def assertGitRepositoryNotFound(self, requester, path, permission="read",
                                     can_authenticate=False, macaroon_raw=None):
         """Assert that the given path cannot be translated."""
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
         fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(
             faults.GitRepositoryNotFound(path.strip("/")), fault)
@@ -80,33 +93,29 @@ class TestGitAPIMixin:
                                permission="read", can_authenticate=False,
                                macaroon_raw=None):
         """Assert that looking at the given path returns PermissionDenied."""
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
         fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.PermissionDenied(message), fault)
 
     def assertUnauthorized(self, requester, path,
                            message="Authorisation required.",
-                           permission="read", can_authenticate=False):
+                           permission="read", can_authenticate=False,
+                           macaroon_raw=None):
         """Assert that looking at the given path returns Unauthorized."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.Unauthorized(message), fault)
 
     def assertNotFound(self, requester, path, message, permission="read",
                        can_authenticate=False):
         """Assert that looking at the given path returns NotFound."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.NotFound(message), fault)
 
     def assertInvalidSourcePackageName(self, requester, path, name,
@@ -114,31 +123,25 @@ class TestGitAPIMixin:
                                        can_authenticate=False):
         """Assert that looking at the given path returns
         InvalidSourcePackageName."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
     def assertInvalidBranchName(self, requester, path, message,
                                 permission="read", can_authenticate=False):
         """Assert that looking at the given path returns InvalidBranchName."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(faults.InvalidBranchName(Exception(message)), fault)
 
     def assertOopsOccurred(self, requester, path,
                            permission="read", can_authenticate=False):
         """Assert that looking at the given path OOPSes."""
-        if requester is not None:
-            requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertIsInstance(fault, faults.OopsOccurred)
         prefix = (
             "An unexpected error has occurred while creating a Git "
@@ -149,11 +152,9 @@ class TestGitAPIMixin:
     def assertTranslates(self, requester, path, repository, writable,
                          permission="read", can_authenticate=False,
                          macaroon_raw=None, trailing="", private=False):
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate,
+            macaroon_raw=macaroon_raw)
         translation = self.git_api.translatePath(path, permission, auth_params)
         login(ANONYMOUS)
         self.assertEqual(
@@ -163,13 +164,9 @@ class TestGitAPIMixin:
 
     def assertCreates(self, requester, path, can_authenticate=False,
                       private=False):
-        if requester is None:
-            requester_id = requester
-        else:
-            requester_id = requester.id
-        translation = self.git_api.translatePath(
-            path, "write",
-            {"uid": requester_id, "can-authenticate": can_authenticate})
+        auth_params = _make_auth_params(
+            requester, can_authenticate=can_authenticate)
+        translation = self.git_api.translatePath(path, "write", auth_params)
         login(ANONYMOUS)
         repository = getUtility(IGitRepositorySet).getByPath(
             requester, path.lstrip("/"))
@@ -194,11 +191,7 @@ class TestGitAPIMixin:
 
     def assertHasRefPermissions(self, requester, repository, ref_paths,
                                 permissions, macaroon_raw=None):
-        if requester is not None:
-            requester = requester.id
-        auth_params = {"uid": requester}
-        if macaroon_raw is not None:
-            auth_params["macaroon"] = macaroon_raw
+        auth_params = _make_auth_params(requester, macaroon_raw=macaroon_raw)
         translated_path = removeSecurityProxy(repository).getInternalPath()
         if all(isinstance(ref_path, bytes) for ref_path in ref_paths):
             ref_paths = [
@@ -582,6 +575,13 @@ class TestGitAPIMixin:
         login(ANONYMOUS)
         self.assertHasRefPermissions(
             no_privileges, repository, [path], {path: []})
+
+    def test_checkRefPermissions_nonexistent_repository(self):
+        requester = self.factory.makePerson()
+        self.assertEqual(
+            faults.GitRepositoryNotFound("nonexistent"),
+            self.git_api.checkRefPermissions(
+                "nonexistent", [], {"uid": requester.id}))
 
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
@@ -970,24 +970,28 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         macaroons = [
             removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
         path = u"/%s" % code_imports[0].git_repository.unique_name
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
-            None, path, code_imports[0].git_repository, True,
+            LAUNCHPAD_SERVICES, path, code_imports[0].git_repository, True,
             permission="write", macaroon_raw=macaroons[0].serialize())
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[1].serialize())
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
-        self.assertPermissionDenied(
-            None, path, permission="write", macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
+            macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            code_imports[0].registrant, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
 
     def test_translatePath_private_code_import(self):
         # A code import worker with a suitable macaroon can write to a
@@ -1010,27 +1014,72 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         macaroons = [
             removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
         path = u"/%s" % code_imports[0].git_repository.unique_name
-        self.assertPermissionDenied(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
-            None, path, code_imports[0].git_repository, True,
+            LAUNCHPAD_SERVICES, path, code_imports[0].git_repository, True,
             permission="write", macaroon_raw=macaroons[0].serialize(),
             private=True)
-        # The expected faults are slightly different from the public case,
-        # because we deny the existence of private repositories.
-        self.assertGitRepositoryNotFound(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=macaroons[1].serialize())
-        self.assertGitRepositoryNotFound(
-            None, path, permission="write",
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
-        self.assertGitRepositoryNotFound(
-            None, path, permission="write", macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
+            macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            code_imports[0].registrant, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
+
+    def test_translatePath_private_snap_build(self):
+        # A builder with a suitable macaroon can read from a repository
+        # associated with a running private snap build.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
+        with person_logged_in(self.factory.makePerson()) as owner:
+            refs = [
+                self.factory.makeGitRefs(
+                    owner=owner, information_type=InformationType.USERDATA)[0]
+                for _ in range(2)]
+            builds = [
+                self.factory.makeSnapBuild(
+                    requester=owner, owner=owner, git_ref=ref, private=True)
+                for ref in refs]
+            issuer = getUtility(IMacaroonIssuer, "snap-build")
+            macaroons = [
+                removeSecurityProxy(issuer).issueMacaroon(build)
+                for build in builds]
+            repository = refs[0].repository
+            path = u"/%s" % repository.unique_name
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
+        removeSecurityProxy(builds[0]).updateStatus(BuildStatus.BUILDING)
+        self.assertTranslates(
+            LAUNCHPAD_SERVICES, path, repository, False, permission="read",
+            macaroon_raw=macaroons[0].serialize(), private=True)
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="read",
+            macaroon_raw=macaroons[1].serialize())
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="read",
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertUnauthorized(
+            LAUNCHPAD_SERVICES, path, permission="read",
+            macaroon_raw="nonsense")
+        self.assertUnauthorized(
+            repository.registrant, path, permission="read",
+            macaroon_raw=macaroons[0].serialize())
 
     def test_notify(self):
         # The notify call creates a GitRefScanJob.
@@ -1074,7 +1123,30 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
         self.assertEqual(
-            {"macaroon": macaroon.serialize()},
+            {"macaroon": macaroon.serialize(), "user": "+launchpad-services"},
+            self.git_api.authenticateWithPassword("", macaroon.serialize()))
+        other_macaroon = Macaroon(identifier="another", key="another-secret")
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword(
+                "", other_macaroon.serialize()),
+            faults.Unauthorized)
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword("", "nonsense"),
+            faults.Unauthorized)
+
+    def test_authenticateWithPassword_private_snap_build(self):
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
+        with person_logged_in(self.factory.makePerson()) as owner:
+            [ref] = self.factory.makeGitRefs(
+                owner=owner, information_type=InformationType.USERDATA)
+            build = self.factory.makeSnapBuild(
+                requester=owner, owner=owner, git_ref=ref, private=True)
+            issuer = getUtility(IMacaroonIssuer, "snap-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.assertEqual(
+            {"macaroon": macaroon.serialize(), "user": "+launchpad-services"},
             self.git_api.authenticateWithPassword("", macaroon.serialize()))
         other_macaroon = Macaroon(identifier="another", key="another-secret")
         self.assertIsInstance(
@@ -1106,25 +1178,28 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         repository = code_imports[0].git_repository
         ref_path = "refs/heads/master"
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertHasRefPermissions(
-            None, repository, [ref_path],
+            LAUNCHPAD_SERVICES, repository, [ref_path],
             {ref_path: ["create", "push", "force_push"]},
             macaroon_raw=macaroons[0].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[1].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw="nonsense")
+        self.assertHasRefPermissions(
+            code_imports[0].registrant, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0].serialize())
 
     def test_checkRefPermissions_private_code_import(self):
         # A code import worker with a suitable macaroon has repository owner
@@ -1150,25 +1225,47 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         repository = code_imports[0].git_repository
         ref_path = "refs/heads/master"
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
-            macaroon_raw=macaroons[0])
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertHasRefPermissions(
-            None, repository, [ref_path],
+            LAUNCHPAD_SERVICES, repository, [ref_path],
             {ref_path: ["create", "push", "force_push"]},
             macaroon_raw=macaroons[0].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=macaroons[1].serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw=Macaroon(
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
         self.assertHasRefPermissions(
-            None, repository, [ref_path], {ref_path: []},
+            LAUNCHPAD_SERVICES, repository, [ref_path], {ref_path: []},
             macaroon_raw="nonsense")
+        self.assertHasRefPermissions(
+            code_imports[0].registrant, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0].serialize())
+
+    def test_checkRefPermissions_private_snap_build(self):
+        # A builder with a suitable macaroon cannot write to a repository,
+        # even if it is associated with a running private snap build.
+        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
+        with person_logged_in(self.factory.makePerson()) as owner:
+            [ref] = self.factory.makeGitRefs(
+                owner=owner, information_type=InformationType.USERDATA)
+            build = self.factory.makeSnapBuild(
+                requester=owner, owner=owner, git_ref=ref, private=True)
+            issuer = getUtility(IMacaroonIssuer, "snap-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+            build.updateStatus(BuildStatus.BUILDING)
+            path = ref.path.encode("UTF-8")
+        self.assertHasRefPermissions(
+            LAUNCHPAD_SERVICES, ref.repository, [path], {path: []},
+            macaroon_raw=macaroon.serialize())
 
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):

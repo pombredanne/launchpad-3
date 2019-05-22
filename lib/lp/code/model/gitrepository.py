@@ -13,7 +13,10 @@ from collections import (
     defaultdict,
     OrderedDict,
     )
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import email
 from fnmatch import fnmatch
 from functools import partial
@@ -174,6 +177,7 @@ from lp.services.database.constants import (
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.database.stormbase import StormBase
 from lp.services.database.stormexpr import (
     Array,
@@ -182,8 +186,12 @@ from lp.services.database.stormexpr import (
     BulkUpdate,
     Values,
     )
+from lp.services.features import getFeatureFlag
+from lp.services.identity.interfaces.account import IAccountSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import (
     cachedproperty,
@@ -791,6 +799,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         if (verify_policy and
             information_type not in self.getAllowedInformationTypes(user)):
             raise CannotChangeInformationType("Forbidden by project policy.")
+        # XXX cjwatson 2019-03-29: Check privacy rules on snaps that use
+        # this repository.
         self.information_type = information_type
         self._reconcileAccess()
         if (information_type in PRIVATE_INFORMATION_TYPES and
@@ -1423,7 +1433,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         # Can't delete if the repository is associated with anything.
         return len(self.getDeletionRequirements()) == 0
 
-    def _getDeletionRequirements(self):
+    def _getDeletionRequirements(self, eager_load=False):
         """Determine what operations must be performed to delete this branch.
 
         Two dictionaries are returned, one for items that must be deleted,
@@ -1459,11 +1469,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             prerequisite_git_repository=self):
             alteration_operations.append(
                 ClearPrerequisiteRepository(merge_proposal))
+        recipes = self.recipes if eager_load else self._getRecipes()
         deletion_operations.extend(
             DeletionCallable(
                 recipe, msg("This recipe uses this repository."),
                 recipe.destroySelf)
-            for recipe in self.recipes)
+            for recipe in recipes)
         if not getUtility(ISnapSet).findByGitRepository(self).is_empty():
             alteration_operations.append(DeletionCallable(
                 None, msg("Some snap packages build from this repository."),
@@ -1471,10 +1482,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
         return (alteration_operations, deletion_operations)
 
-    def getDeletionRequirements(self):
+    def getDeletionRequirements(self, eager_load=False):
         """See `IGitRepository`."""
         alteration_operations, deletion_operations = (
-            self._getDeletionRequirements())
+            self._getDeletionRequirements(eager_load=eager_load))
         result = {
             operation.affected_object: ("alter", operation.rationale)
             for operation in alteration_operations}
@@ -1759,6 +1770,106 @@ class GitRepositorySet:
             extra_conditions=[GitRepository.target_default == True])
         return {
             repository.project_id: repository for repository in repositories}
+
+
+@implementer(IMacaroonIssuer)
+class GitRepositoryMacaroonIssuer(MacaroonIssuerBase):
+
+    identifier = "git-repository"
+    allow_multiple = {"lp.expires"}
+
+    _timestamp_format = "%Y-%m-%dT%H:%M:%S.%f"
+
+    def __init__(self):
+        super(GitRepositoryMacaroonIssuer, self).__init__()
+        self.checkers = {
+            "lp.principal.openid-identifier": self.verifyOpenIDIdentifier,
+            "lp.expires": self.verifyExpires,
+            }
+
+    @property
+    def _root_secret(self):
+        secret = config.codehosting.git_macaroon_secret_key
+        if not secret:
+            raise RuntimeError(
+                "codehosting.git_macaroon_secret_key not configured.")
+        return secret
+
+    def checkIssuingContext(self, context, user=None, **kwargs):
+        """See `MacaroonIssuerBase`.
+
+        For issuing, the context is an `IGitRepository`.
+        """
+        if user is None:
+            raise Unauthorized(
+                "git-repository macaroons may only be issued for a logged-in "
+                "user.")
+        if not IGitRepository.providedBy(context):
+            raise ValueError("Cannot handle context %r." % context)
+        return context.id
+
+    def issueMacaroon(self, context, user=None, **kwargs):
+        """See `IMacaroonIssuer`."""
+        macaroon = super(GitRepositoryMacaroonIssuer, self).issueMacaroon(
+            context, user=user, **kwargs)
+        naked_account = removeSecurityProxy(user).account
+        macaroon.add_first_party_caveat(
+            "lp.principal.openid-identifier " +
+            naked_account.openid_identifiers.any().identifier)
+        store = IStore(GitRepository)
+        # XXX cjwatson 2019-04-09: Expire macaroons after the number of
+        # seconds given in the code.git.access_token_expiry feature flag,
+        # defaulting to a week.  This isn't very flexible, but for now it
+        # saves on having to implement macaroon persistence in order that
+        # users can revoke them.
+        expiry_seconds_str = getFeatureFlag("code.git.access_token_expiry")
+        if expiry_seconds_str is None:
+            expiry_seconds = 60 * 60 * 24 * 7
+        else:
+            expiry_seconds = int(expiry_seconds_str)
+        expiry = (
+            get_transaction_timestamp(store) +
+            timedelta(seconds=expiry_seconds))
+        macaroon.add_first_party_caveat(
+            "lp.expires " + expiry.strftime(self._timestamp_format))
+        return macaroon
+
+    def checkVerificationContext(self, context, **kwargs):
+        """See `MacaroonIssuerBase`.
+
+        For verification, the context is an `IGitRepository`.
+        """
+        if not IGitRepository.providedBy(context):
+            raise ValueError("Cannot handle context %r." % context)
+        return context
+
+    def verifyPrimaryCaveat(self, caveat_value, context, **kwargs):
+        """See `MacaroonIssuerBase`."""
+        if context is None:
+            # We're only verifying that the macaroon could be valid for some
+            # context.
+            return True
+        return caveat_value == str(context.id)
+
+    def verifyOpenIDIdentifier(self, caveat_value, context, **kwargs):
+        """Verify an lp.principal.openid-identifier caveat."""
+        user = kwargs.get("user")
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                caveat_value)
+        except LookupError:
+            return False
+        return IPerson.providedBy(user) and user.account == account
+
+    def verifyExpires(self, caveat_value, context, **kwargs):
+        """Verify an lp.expires caveat."""
+        try:
+            expires = datetime.strptime(
+                caveat_value, self._timestamp_format).replace(tzinfo=pytz.UTC)
+        except ValueError:
+            return False
+        store = IStore(GitRepository)
+        return get_transaction_timestamp(store) < expires
 
 
 def get_git_repository_privacy_filter(user, repository_class=GitRepository):

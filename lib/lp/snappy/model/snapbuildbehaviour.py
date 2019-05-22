@@ -48,6 +48,17 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 
 
+def format_as_rfc3339(timestamp):
+    """Return a RFC3339 representation of the given timestamp.
+
+    Clear 'microsecond' and 'tzinfo' before returning its '.isoformat()'
+    representation appended with 'Z' (https://www.ietf.org/rfc/rfc3339.txt)
+
+    This is how snapd/SAS and snapcraft usually represent timestamps.
+    """
+    return timestamp.replace(microsecond=0, tzinfo=None).isoformat() + 'Z'
+
+
 @adapter(ISnapBuild)
 @implementer(IBuildFarmJobBehaviour)
 class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
@@ -136,7 +147,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             elif build.snap.git_repository.private:
                 macaroon_raw = yield cancel_on_timeout(
                     self._authserver.callRemote(
-                        "issueMacaroon", "snap-build", build.id),
+                        "issueMacaroon", "snap-build", "SnapBuild", build.id),
                     config.builddmaster.authentication_timeout)
                 # XXX cjwatson 2019-03-07: This is ugly and needs
                 # refactoring once we support more general HTTPS
@@ -162,6 +173,13 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 (build.snap.owner.name, build.snap.name))
         args["build_source_tarball"] = build.snap.build_source_tarball
         args["private"] = build.is_private
+        build_request = build.build_request
+        if build_request is not None:
+            args["build_request_id"] = build_request.id
+            # RFC3339 format for timestamp
+            # (matching snapd, SAS and snapcraft representation)
+            timestamp = format_as_rfc3339(build_request.date_requested)
+            args["build_request_timestamp"] = timestamp
         defer.returnValue(args)
 
     @defer.inlineCallbacks

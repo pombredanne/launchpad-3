@@ -10,9 +10,9 @@ __all__ = [
     'CreatedBugWithNoBugTasksError',
     'IBug',
     'IBugAddForm',
+    'IBugAppend',
     'IBugBecameQuestionEvent',
     'IBugDelta',
-    'IBugEdit',
     'IBugMute',
     'IBugPublic',
     'IBugSet',
@@ -684,8 +684,8 @@ class IBugView(Interface):
         """
 
 
-class IBugEdit(Interface):
-    """IBug attributes that require launchpad.Edit permission."""
+class IBugAppend(Interface):
+    """IBug attributes that require launchpad.Append permission."""
 
     @call_with(owner=REQUEST_USER, from_api=True)
     @operation_parameters(
@@ -1009,7 +1009,7 @@ class IBugEdit(Interface):
         """
 
 
-class IBug(IBugPublic, IBugView, IBugEdit, IHasLinkedBranches):
+class IBug(IBugPublic, IBugView, IBugAppend, IHasLinkedBranches):
     """The core bug entry."""
     export_as_webservice_entry()
 

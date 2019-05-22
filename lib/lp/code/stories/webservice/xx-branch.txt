@@ -186,18 +186,21 @@ Project branches
 
 The branches of a project are also available.
 
+    >>> from operator import itemgetter
+
     >>> def print_branch(branch):
     ...     print(branch['unique_name'] + ' - ' + branch['lifecycle_status'])
     >>> def print_branches(webservice, url, status=None, modified_since=None):
     ...     branches = webservice.named_get(
     ...         url, 'getBranches',
     ...         status=status, modified_since=modified_since).jsonBody()
-    ...     for branch in branches['entries']:
+    ...     for branch in sorted(
+    ...             branches['entries'], key=itemgetter('unique_name')):
     ...         print_branch(branch)
 
     >>> print_branches(webservice, '/fooix')
-    ~eric/fooix/trunk - Development
     ~eric/fooix/feature-branch - Experimental
+    ~eric/fooix/trunk - Development
 
 The branches can be limited to those that have been modified since a specified
 time.
@@ -217,8 +220,8 @@ Branches for people
 The branches owned by a person are available from the person object.
 
     >>> print_branches(webservice, '/~eric')
-    ~eric/fooix/trunk - Development
     ~eric/fooix/feature-branch - Experimental
+    ~eric/fooix/trunk - Development
 
 As with projects, these can be filtered by the branch status.
 
@@ -239,8 +242,8 @@ Branches are also accessible for a project group.
     >>> logout()
 
     >>> print_branches(webservice, '/widgets')
-    ~eric/fooix/trunk - Development
     ~eric/fooix/feature-branch - Experimental
+    ~eric/fooix/trunk - Development
     ~mary/blob/bar - Development
 
 As with projects, these can be filtered by the branch status.

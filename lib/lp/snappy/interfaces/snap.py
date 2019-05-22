@@ -206,8 +206,9 @@ class BadSnapSource(Exception):
 class SnapPrivacyMismatch(Exception):
     """Snap package privacy does not match its content."""
 
-    def __init__(self):
+    def __init__(self, message=None):
         super(SnapPrivacyMismatch, self).__init__(
+            message or
             "Snap contains private information and cannot be public.")
 
 
@@ -330,6 +331,10 @@ class ISnapBuildRequest(Interface):
         IArchive,
         title=u"The source archive for builds produced by this request",
         required=True, readonly=True)
+
+    channels = Dict(
+        title=_("Source snap channels for builds produced by this request"),
+        key_type=TextLine(), required=False, readonly=True)
 
 
 class ISnapView(Interface):
@@ -660,7 +665,8 @@ class ISnapEditableAttributes(IHasOwner):
         required=False, readonly=False,
         description=_(
             "A Bazaar branch containing a snap/snapcraft.yaml, "
-            "snapcraft.yaml, or .snapcraft.yaml recipe at the top level.")))
+            "build-aux/snap/snapcraft.yaml, snapcraft.yaml, or "
+            ".snapcraft.yaml recipe at the top level.")))
 
     git_repository = exported(ReferenceChoice(
         title=_("Git repository"),
@@ -668,14 +674,15 @@ class ISnapEditableAttributes(IHasOwner):
         required=False, readonly=True,
         description=_(
             "A Git repository with a branch containing a snap/snapcraft.yaml, "
-            "snapcraft.yaml, or .snapcraft.yaml recipe at the top level.")))
+            "build-aux/snap/snapcraft.yaml, snapcraft.yaml, or "
+            ".snapcraft.yaml recipe at the top level.")))
 
     git_repository_url = exported(URIField(
         title=_("Git repository URL"), required=False, readonly=True,
         description=_(
             "The URL of a Git repository with a branch containing a "
-            "snap/snapcraft.yaml, snapcraft.yaml, or .snapcraft.yaml recipe "
-            "at the top level."),
+            "snap/snapcraft.yaml, build-aux/snap/snapcraft.yaml, "
+            "snapcraft.yaml, or .snapcraft.yaml recipe at the top level."),
         allowed_schemes=["git", "http", "https"],
         allow_userinfo=True,
         allow_port=True,
@@ -687,21 +694,20 @@ class ISnapEditableAttributes(IHasOwner):
         title=_("Git branch path"), required=False, readonly=False,
         description=_(
             "The path of the Git branch containing a snap/snapcraft.yaml, "
-            "snapcraft.yaml, or .snapcraft.yaml recipe at the top level."))
+            "build-aux/snap/snapcraft.yaml, snapcraft.yaml, or "
+            ".snapcraft.yaml recipe at the top level."))
     _api_git_path = exported(
         TextLine(
-            title=_("Git branch path"), required=False, readonly=False,
-            description=_(
-                "The path of the Git branch containing a snap/snapcraft.yaml, "
-                "snapcraft.yaml, or .snapcraft.yaml recipe at the top "
-                "level.")),
+            title=git_path.title, required=False, readonly=False,
+            description=git_path.description),
         exported_as="git_path")
 
     git_ref = exported(Reference(
         IGitRef, title=_("Git branch"), required=False, readonly=False,
         description=_(
-            "The Git branch containing a snap/snapcraft.yaml, snapcraft.yaml, "
-            "or .snapcraft.yaml recipe at the top level.")))
+            "The Git branch containing a snap/snapcraft.yaml, "
+            "build-aux/snap/snapcraft.yaml, snapcraft.yaml, or "
+            ".snapcraft.yaml recipe at the top level.")))
 
     build_source_tarball = exported(Bool(
         title=_("Build source tarball"),
@@ -715,7 +721,8 @@ class ISnapEditableAttributes(IHasOwner):
         required=True, readonly=False,
         description=_(
             "Whether this snap package is built automatically when the branch "
-            "containing its snap/snapcraft.yaml, snapcraft.yaml, or "
+            "containing its snap/snapcraft.yaml, "
+            "build-aux/snap/snapcraft.yaml, snapcraft.yaml, or "
             ".snapcraft.yaml recipe changes.")))
 
     auto_build_archive = exported(Reference(

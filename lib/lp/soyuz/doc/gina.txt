@@ -123,9 +123,11 @@ Let's set up the filesystem:
 
 And give it a spin:
 
+    >>> from lp.testing.fixture import CaptureOops
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'hoary', 'breezy']
-    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> with CaptureOops():
+    ...     proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
 
 Check STDERR for the errors we expected:
 
@@ -513,7 +515,8 @@ run.
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'hoary', 'breezy']
-    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> with CaptureOops():
+    ...     proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print(proc.stderr.read())
     ERROR   Error processing package files for clearlooks
     ...

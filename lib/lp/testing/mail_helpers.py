@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions dealing with emails in tests.
@@ -60,7 +60,8 @@ def sort_addresses(header):
 
 def print_emails(include_reply_to=False, group_similar=False,
                  include_rationale=False, include_for=False,
-                 notifications=None, include_notification_type=False):
+                 notifications=None, include_notification_type=False,
+                 decode=False):
     """Pop all messages from stub.test_emails and print them with
      their recipients.
 
@@ -80,6 +81,7 @@ def print_emails(include_reply_to=False, group_similar=False,
         the stack.
     :param include_notification_type: Include the
         X-Launchpad-Notification-Type header.
+    :param decode: Decode message payloads if True.
     """
     distinct_bodies = {}
     if notifications is None:
@@ -88,7 +90,7 @@ def print_emails(include_reply_to=False, group_similar=False,
         recipients = set(
             recipient.strip()
             for recipient in message['To'].split(','))
-        body = message.get_payload()
+        body = message.get_payload(decode=decode)
         if group_similar:
             # Strip the first line as it's different for each recipient.
             body = body[body.find('\n') + 1:]
