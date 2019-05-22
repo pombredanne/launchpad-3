@@ -14,6 +14,10 @@ __all__ = [
 import base64
 import time
 
+from six.moves.urllib.parse import (
+    urlsplit,
+    urlunsplit,
+    )
 import treq
 from twisted.internet import defer
 from zope.component import adapter
@@ -31,6 +35,7 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.treq import check_status
 from lp.snappy.interfaces.snap import (
     SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
@@ -139,6 +144,21 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         elif build.snap.git_ref is not None:
             if build.snap.git_ref.repository_url is not None:
                 args["git_repository"] = build.snap.git_ref.repository_url
+            elif build.snap.git_repository.private:
+                macaroon_raw = yield cancel_on_timeout(
+                    self._authserver.callRemote(
+                        "issueMacaroon", "snap-build", "SnapBuild", build.id),
+                    config.builddmaster.authentication_timeout)
+                # XXX cjwatson 2019-03-07: This is ugly and needs
+                # refactoring once we support more general HTTPS
+                # authentication; see also comment in
+                # GitRepository.git_https_url.
+                split = urlsplit(build.snap.git_repository.getCodebrowseUrl())
+                netloc = ":%s@%s" % (macaroon_raw, split.hostname)
+                if split.port:
+                    netloc += ":%s" % split.port
+                args["git_repository"] = urlunsplit([
+                    split.scheme, netloc, split.path, "", ""])
             else:
                 args["git_repository"] = (
                     build.snap.git_repository.git_https_url)
